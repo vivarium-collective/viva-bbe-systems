@@ -363,18 +363,22 @@ git commit -m "feat: CTRNN genome encode/decode with bounds + shape validation"
 
 ---
 
-### Task 4: `CTRNNProcess` + registration + brain-only composite smoke
+### Task 4: `CTRNNProcess` + brain-only composite smoke
 
 **Files:**
 - Create: `viva_bbe_systems/processes/__init__.py`, `viva_bbe_systems/processes/ctrnn_process.py`
-- Modify: `viva_bbe_systems/core.py` (register the process)
 - Test: `tests/test_ctrnn_process.py`
+
+**Registration note (verified against the scaffolded workspace):** the template's
+`build_core()` AUTO-DISCOVERS every `Process`/`Step` subclass defined in this
+package and registers it under its **class name** (`local:CTRNNProcess`). Do NOT
+add a `register_ctrnn` helper and do NOT edit `core.py`. Port vector types are the
+string `"array[float]"` (the installed grammar — not `array[(N,),float]`).
 
 **Interfaces:**
 - Consumes: `CTRNN`, `center_crossing_biases` (Task 2); `decode`, `GenomeSpec` (Task 3).
 - Produces:
-  - `class CTRNNProcess(Process)` with config `{size:int, dt:float, tau, theta, weights, motor_indices:list[int]}` (params may be given directly or via `genome`+`GenomeSpec`); ports — inputs `{sensory_input: array[size]}`, outputs `{motor_output: array[len(motor_indices)], neuron_outputs: array[size], neuron_states: array[size]}`; `update(state, interval)` steps the net over `interval` in `dt` increments.
-  - `register_ctrnn(core)` registering it under process id `"ctrnn"`.
+  - `class CTRNNProcess(Process)` with config `{size:int, dt:float, tau, theta, weights, genome, center_crossing, motor_indices:list[int], initial_state}` (params given directly or via `genome`+implied `GenomeSpec(size)`); ports — input `{sensory_input: "array[float]"}`, outputs `{motor_output, neuron_outputs, neuron_states}` each `"array[float]"`; `update(state, interval)` steps the net over `interval` in `dt` increments. Addressed in composites as `local:CTRNNProcess`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -387,26 +391,25 @@ from viva_bbe_systems.core import build_core
 def test_ctrnn_process_runs_in_composite():
     core = build_core()
     spec = {
-        "state": {
-            "brain": {
-                "_type": "process",
-                "address": "local:ctrnn",
-                "config": {"size": 2, "dt": 0.01,
-                           "weights": [[4.5, 1.0], [-1.0, 4.5]],
-                           "motor_indices": [1]},
-                "inputs": {"sensory_input": ["sensory"]},
-                "outputs": {"motor_output": ["motor"], "neuron_states": ["states"]},
-            },
-            "sensory": [0.0, 0.0],
-            "motor": [0.0],
-            "states": [0.0, 0.0],
-        }
+        "brain": {
+            "_type": "process",
+            "address": "local:CTRNNProcess",
+            "config": {"size": 2, "dt": 0.01,
+                       "weights": [[4.5, 1.0], [-1.0, 4.5]],
+                       "motor_indices": [1]},
+            "inputs": {"sensory_input": ["sensory"]},
+            "outputs": {"motor_output": ["motor"],
+                        "neuron_states": ["states"]},
+        },
+        "sensory": [0.0, 0.0],
+        "motor": [0.0],
+        "states": [0.0, 0.0],
     }
     from process_bigraph import Composite
-    sim = Composite(spec, core=core)
+    sim = Composite({"state": spec}, core=core)
     sim.run(1.0)
-    results = sim.gather_results()
-    assert results is not None  # ran without error; motor produced a value
+    # ran without error; motor store advanced to a produced value
+    assert sim.state["motor"] is not None
 ```
 
 - [ ] **Step 2: Run to verify failure**
@@ -459,13 +462,13 @@ class CTRNNProcess(Process):
         self.motor_indices = list(self.config["motor_indices"])
 
     def inputs(self):
-        return {"sensory_input": f"array[({self.config['size']},),float]"}
+        return {"sensory_input": "array[float]"}
 
     def outputs(self):
         return {
-            "motor_output": f"array[({max(len(self.motor_indices),1)},),float]",
-            "neuron_outputs": f"array[({self.config['size']},),float]",
-            "neuron_states": f"array[({self.config['size']},),float]",
+            "motor_output": "array[float]",
+            "neuron_outputs": "array[float]",
+            "neuron_states": "array[float]",
         }
 
     def update(self, state, interval):
@@ -476,43 +479,30 @@ class CTRNNProcess(Process):
             o = self.net.step(external_input=I)
         motor = o[self.motor_indices] if self.motor_indices else np.array([0.0])
         return {"motor_output": motor, "neuron_outputs": o, "neuron_states": self.net.y.copy()}
-
-
-def register_ctrnn(core):
-    core.register_process("ctrnn", CTRNNProcess)
-    return core
 ```
 
 ```python
 # viva_bbe_systems/processes/__init__.py
-from .ctrnn_process import CTRNNProcess, register_ctrnn
-__all__ = ["CTRNNProcess", "register_ctrnn"]
+from .ctrnn_process import CTRNNProcess
+__all__ = ["CTRNNProcess"]
 ```
 
-Modify `core.py`:
-
-```python
-# viva_bbe_systems/core.py  (update build_core)
-from process_bigraph import ProcessTypes
-from .processes import register_ctrnn
-
-
-def build_core() -> ProcessTypes:
-    core = ProcessTypes()
-    register_ctrnn(core)
-    return core
-```
+Do **not** edit `core.py` — `build_core()` auto-discovers `CTRNNProcess` by class
+name (it walks the package's modules). Confirm discovery works:
+`python -c "from viva_bbe_systems.core import build_core; c=build_core(); print('CTRNNProcess' in c.link_registry)"` → prints `True`.
 
 - [ ] **Step 4: Run to verify pass**
 
 Run: `pytest tests/test_ctrnn_process.py -v`
-Expected: PASS. (If the array type grammar differs in the installed bigraph-schema, adjust the `array[(N,),float]` strings to the registered form; verify with `python -c "from viva_bbe_systems import build_core; build_core()"`.)
+Expected: PASS. (The composite addresses `local:CTRNNProcess`; if the Composite
+state-nesting or run API differs in the installed process-bigraph, adjust the test
+to the installed API — verify discovery with the one-liner above first.)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add viva_bbe_systems/processes viva_bbe_systems/core.py tests/test_ctrnn_process.py
-git commit -m "feat: CTRNNProcess brain + build_core registration"
+git add viva_bbe_systems/processes tests/test_ctrnn_process.py
+git commit -m "feat: CTRNNProcess brain (auto-discovered by build_core)"
 ```
 
 ---
@@ -857,7 +847,8 @@ git commit -m "feat: generic composite-evolving genetic algorithm"
 
 **Interfaces:**
 - Consumes: `CTRNN`, `analysis.equilibria`, `analysis.nullcline_grid`, `analysis.bifurcation_sweep`.
-- Produces (each a `@visualization`-decorated function returning a matplotlib Figure):
+- Produces (plain functions returning a matplotlib `Figure` — NO decorator; the
+  dashboard-registered Visualizations are wired separately by `/viva-viz` in Task 9):
   - `phase_portrait_2d(net, I, y_range=(-10,10), resolution=25)` — vector field + both nullclines + equilibria (stable filled, unstable open).
   - `bifurcation_diagram(net_factory, param_values, param_name, I=0.0)` — equilibrium branches vs parameter, colored by stability.
 
@@ -893,26 +884,22 @@ def test_bifurcation_diagram_returns_figure():
 Run: `pytest tests/test_viz.py -v`
 Expected: FAIL (module not defined).
 
-- [ ] **Step 3: Implement** (use the workspace's `@visualization` decorator; if its import path differs, verify with `grep -r "def visualization" $(python -c "import pbg_superpowers,os;print(os.path.dirname(pbg_superpowers.__file__))")` and match it)
+- [ ] **Step 3: Implement** (plain functions; set the Agg backend at import so headless render works)
 
 ```python
 # viva_bbe_systems/viz.py
-"""Dynamical-systems visualizations (Beer's signature plots). AI-free."""
+"""Dynamical-systems visualizations (Beer's signature plots). AI-free.
+
+Plain functions returning matplotlib Figures so they are unit-testable and
+usable from a gallery script or /viva-viz wiring. No dashboard decorator."""
 from __future__ import annotations
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from .analysis import equilibria, nullcline_grid, bifurcation_sweep, is_stable
 
-try:
-    from pbg_superpowers.viz import visualization
-except Exception:  # decorator optional for unit tests
-    def visualization(*a, **k):
-        def deco(fn):
-            return fn
-        return deco if (a and callable(a[0]) is False) else (a[0] if a else deco)
 
-
-@visualization(name="phase_portrait_2d")
 def phase_portrait_2d(net, I, y_range=(-10, 10), resolution=25):
     I = np.asarray(I, dtype=float)
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -934,7 +921,6 @@ def phase_portrait_2d(net, I, y_range=(-10, 10), resolution=25):
     return fig
 
 
-@visualization(name="bifurcation_diagram")
 def bifurcation_diagram(net_factory, param_values, param_name, I=0.0):
     sweep = bifurcation_sweep(net_factory, list(param_values), I=I,
                               rng=np.random.default_rng(0))
