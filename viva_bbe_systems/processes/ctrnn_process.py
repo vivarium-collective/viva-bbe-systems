@@ -7,6 +7,12 @@ from ..genome import GenomeSpec, decode
 
 
 class CTRNNProcess(Process):
+    """CTRNN as a process-bigraph Process.
+
+    `sensory_input` must be length `size` (it enters `-y + w@o + I` directly);
+    BBE bodies zero-pad currents for non-sensor neurons.
+    """
+
     config_schema = {
         "size": "integer",
         "dt": {"_type": "float", "_default": 0.01},

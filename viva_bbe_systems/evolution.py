@@ -11,6 +11,10 @@ from .genome import GenomeSpec, random_genome, clip_to_bounds
 
 def evolve(fitness_fn, spec: GenomeSpec, *, pop_size=50, generations=30,
            mutation_sd=0.5, seed=0, elitism=1) -> dict:
+    if not (1 <= pop_size):
+        raise ValueError("pop_size must be >= 1")
+    if not (0 <= elitism <= pop_size):
+        raise ValueError("elitism must be in [0, pop_size]")
     rng = np.random.default_rng(seed)
     pop = np.array([random_genome(spec, rng) for _ in range(pop_size)])
     fits = np.array([fitness_fn(g) for g in pop])

@@ -1,7 +1,7 @@
 schema_version: 3
 name: param-space-codim1-bifurcations
 investigation: ctrnn-parameter-space
-title: "Codim-1 Fold: 1→3 Equilibria (Beer 2006)"
+title: "Codim-1 Pitchfork: 1→3 Equilibria (Beer 2006)"
 status: ran
 confidence: Accepted
 
@@ -10,17 +10,21 @@ question: |
   its equilibrium set change, and at what point does bistability appear?
 
 hypothesis: |
-  The neuron has one equilibrium at low self-weight and, past a saddle-node fold,
-  three equilibria (two stable, one unstable) — the codimension-1 bifurcation
-  structure of Beer (2006).
+  On the center-crossing (symmetric) slice, the neuron has one equilibrium at low
+  self-weight and, past a pitchfork at w≈4, three equilibria (two stable, one
+  unstable) — the codimension-1 bifurcation structure of Beer (2006). The central
+  equilibrium (output 0.5) loses stability and two symmetric stable equilibria
+  appear.
 
 objective: |
   Sweep the self-weight of a single center-crossing neuron, count equilibria and
   classify their stability at each value, and render the bifurcation diagram.
 
 claim: |
-  A single center-crossing neuron undergoes a saddle-node fold from 1 to 3
-  equilibria as self-weight grows, reproducing Beer (2006).
+  On the center-crossing (symmetric, θ=−w/2) slice, a single neuron undergoes a
+  pitchfork bifurcation at w≈4 from 1 to 3 equilibria as self-weight grows,
+  reproducing Beer (2006). Off this slice the pitchfork unfolds into saddle-node
+  folds (see the codim-2 study).
 
 description: |
   Built on `analysis.bifurcation_sweep` over a self-weight grid, with
@@ -28,20 +32,23 @@ description: |
   is pinned in the test suite (1 equilibrium at w=1.0, 3 at w=8.0).
 
 expected_behavior:
-  - name: single-neuron-fold-1-to-3
+  - name: single-neuron-pitchfork-1-to-3
     observable: equilibrium-count
     condition: "single center-crossing neuron, self-weight 1.0 → 8.0, I = 0"
     rationale: |
-      At w=1.0 there is a unique equilibrium; past the fold (by w=8.0) there are
-      three — two stable outer branches and one unstable middle branch — the
-      saddle-node signature.
+      On the center-crossing symmetric slice, at w=1.0 there is a unique
+      equilibrium; past the pitchfork at w≈4 (by w=8.0) there are three — two
+      stable outer branches and the now-unstable central branch — the symmetric
+      pitchfork signature (not a fold: the branches emerge symmetrically from the
+      central equilibrium).
 
 findings:
-  - summary: "Fold confirmed: 1 equilibrium at w=1.0, 3 at w=8.0 (two stable, one unstable)."
+  - summary: "Pitchfork confirmed (center-crossing slice): 1 equilibrium at w=1.0, 3 at w=8.0 (two stable, one unstable)."
     detail: |
-      The bifurcation diagram (figures/bifurcation.png) shows the single branch
-      splitting into three as self-weight increases, with the middle branch
-      unstable (red) and the outer branches stable (black).
+      The bifurcation diagram (figures/bifurcation.png), on the center-crossing
+      symmetric slice, shows the single branch splitting symmetrically into three
+      at w≈4 as self-weight increases, with the middle branch unstable (red) and
+      the outer branches stable (black).
 
 figures:
   - path: ../../figures/bifurcation.png

@@ -5,14 +5,14 @@ from .ctrnn import CTRNN, center_crossing_biases
 from .analysis import equilibria
 
 
-def single_neuron_net(self_weight, I=0.0):
+def single_neuron_net(self_weight):
     net = CTRNN(1)
     net.weights[:] = np.array([[self_weight]])
     net.theta[:] = center_crossing_biases(net.weights)
     return net
 
 
-def two_neuron_net(w, I=0.0, center_crossing=True):
+def two_neuron_net(w, center_crossing=True):
     net = CTRNN(2)
     net.weights[:] = np.asarray(w, dtype=float)
     if center_crossing:

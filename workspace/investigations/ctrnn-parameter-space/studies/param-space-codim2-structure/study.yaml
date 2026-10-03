@@ -6,13 +6,14 @@ status: ran
 confidence: Accepted
 
 question: |
-  How is the single-neuron saddle-node fold organised when both the self-weight
+  How is the single-neuron 1→3 transition organised (saddle-node fold curves and a cusp) when both the self-weight
   and the bias vary — what is the shape of the bistable region in the
   (self-weight, bias) plane?
 
 hypothesis: |
-  The folds bound a connected cusp-shaped wedge of bistability (three equilibria)
-  that opens as self-weight increases — the codimension-2 organising structure of
+  Two saddle-node fold curves meet at a cusp and bound a connected wedge of
+  bistability (three equilibria) that opens as self-weight increases; the
+  center-crossing pitchfork is the cusp's symmetric axis — the codimension-2 organising structure of
   Beer (2022).
 
 objective: |
@@ -27,7 +28,8 @@ claim: |
 description: |
   `param_space.codim2_equilibria_count` evaluates the equilibrium count over the
   (w, θ) grid; the gallery renders it as a heatmap. A bistable (3-equilibria)
-  region is present and connected, bounded by the fold curve; cells exactly on the
+  region is present and connected, bounded by two saddle-node fold curves meeting at a cusp (the center-crossing
+  pitchfork is its symmetric axis); cells exactly on the
   fold can register 2 equilibria.
 
 expected_behavior:
@@ -42,7 +44,7 @@ findings:
   - summary: "Connected bistable wedge found; max equilibrium count = 3 over the grid."
     detail: |
       The codim-2 map (figures/codim2.png) shows a yellow (3-equilibria) wedge
-      opening at high self-weight and bounded by the fold curve, with a boundary
+      opening at high self-weight and bounded by two fold curves meeting at a cusp, with a boundary
       cell at exactly 2 equilibria sitting on the fold.
 
 figures:

@@ -1,4 +1,8 @@
-"""Flat-vector genome encode/decode for a CTRNN (the GA's evolvable contract)."""
+"""Flat-vector genome encode/decode for a CTRNN (the GA's evolvable contract).
+
+This encodes a CTRNN genome only (tau/theta/weights); BBE model plans that
+evolve sensor gains / body params will extend the encoding.
+"""
 from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np

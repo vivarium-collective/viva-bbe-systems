@@ -23,6 +23,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .ctrnn import CTRNN
 from .param_space import single_neuron_net, two_neuron_net, codim2_equilibria_count
 from .viz import phase_portrait_2d, bifurcation_diagram
 
@@ -52,18 +53,20 @@ def codim2_heatmap(w_values, b_values):
 
 
 def _single_neuron_with_bias(self_weight, bias):
-    net = single_neuron_net(self_weight)
+    net = CTRNN(1)
+    net.weights[:] = np.array([[self_weight]])
     net.theta[:] = [bias]
     return net
 
 
-def render(outdir: Path) -> list[Path]:
+def render(outdir: Path, *, phase_res=25, bifurcation_points=40,
+           codim2_res=40) -> list[Path]:
     outdir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
 
     # 1. Phase portrait of a 2-neuron center-crossing oscillator.
     net = two_neuron_net(np.array([[4.5, 1.0], [-1.0, 4.5]]))
-    fig = phase_portrait_2d(net, np.zeros(2), y_range=(-10, 10), resolution=25)
+    fig = phase_portrait_2d(net, np.zeros(2), y_range=(-10, 10), resolution=phase_res)
     p = outdir / "phase_portrait.png"
     fig.savefig(p, dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -72,7 +75,7 @@ def render(outdir: Path) -> list[Path]:
     # 2. Codim-1 bifurcation: single self-excitatory neuron, 1 -> 3 equilibria.
     fig = bifurcation_diagram(
         lambda w: single_neuron_net(w),
-        np.linspace(0.5, 10.0, 40),
+        np.linspace(0.5, 10.0, bifurcation_points),
         "self-weight w",
     )
     p = outdir / "bifurcation.png"
@@ -81,7 +84,8 @@ def render(outdir: Path) -> list[Path]:
     written.append(p)
 
     # 3. Codim-2 equilibrium-count map over (self-weight, bias).
-    fig = codim2_heatmap(np.linspace(0.5, 12.0, 40), np.linspace(-8.0, 2.0, 40))
+    fig = codim2_heatmap(np.linspace(0.5, 12.0, codim2_res),
+                         np.linspace(-8.0, 2.0, codim2_res))
     p = outdir / "codim2.png"
     fig.savefig(p, dpi=150, bbox_inches="tight")
     plt.close(fig)

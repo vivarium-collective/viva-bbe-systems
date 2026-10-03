@@ -21,3 +21,9 @@ def test_ga_is_deterministic_under_seed():
     a = evolve(f, spec, seed=7, generations=10, pop_size=20)
     b = evolve(f, spec, seed=7, generations=10, pop_size=20)
     assert a["best_fitness"] == b["best_fitness"]
+
+
+def test_evolve_rejects_elitism_above_pop_size():
+    import pytest
+    with pytest.raises(ValueError):
+        evolve(lambda g: 0.0, GenomeSpec(size=2), pop_size=4, elitism=5, generations=1)

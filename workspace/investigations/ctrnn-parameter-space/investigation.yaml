@@ -13,11 +13,12 @@ question: |
   codimension-2 structure of those bifurcations?
 
 hypothesis: |
-  A single self-excitatory center-crossing neuron undergoes a saddle-node
-  (fold) bifurcation from one equilibrium to three (bistability) as its
-  self-weight increases, and the set of such transitions forms a cusp-shaped
-  wedge in the (self-weight, bias) plane — the codimension-2 organizing
-  structure described by Beer (2006, 2022). A two-neuron center-crossing
+  A single self-excitatory center-crossing neuron undergoes a pitchfork
+  bifurcation from one equilibrium to three (bistability) as its self-weight
+  increases past w≈4 (on the symmetric center-crossing line). Off that line the
+  pitchfork unfolds into two saddle-node (fold) curves that bound a cusp-shaped
+  bistable wedge in the (self-weight, bias) plane and meet at a cusp — the
+  codimension-2 organizing structure described by Beer (2006, 2022). A two-neuron center-crossing
   circuit with mixed-sign mutual coupling can lose stability of its interior
   equilibrium and oscillate.
 
@@ -35,9 +36,10 @@ executive:
     1- and 2-neuron CTRNNs, reproducing the parameter-space picture from Beer
     (2006, 2022).
   verdict: |
-    The expected saddle-node / bistability structure is reproduced: a single
-    center-crossing neuron goes 1→3 equilibria with increasing self-weight, the
-    bistable region forms a cusp wedge in (w, θ), and a 2-neuron center-crossing
+    The expected pitchfork / bistability structure is reproduced: a single
+    center-crossing neuron goes 1→3 equilibria (pitchfork, w≈4) with increasing
+    self-weight, the bistable region forms a wedge in (w, θ) bounded by
+    saddle-node folds meeting at a cusp, and a 2-neuron center-crossing
     circuit oscillates (interior equilibrium unstable).
   verdict_status: passed
   verdict_detail: |
@@ -49,16 +51,18 @@ executive:
 scientific_argument:
   main_claim: |
     The equilibrium structure of small center-crossing CTRNNs is organised by a
-    cusp: a saddle-node fold creating bistability, exactly as Beer's
+    cusp: on the symmetric center-crossing line a pitchfork creates bistability,
+    which off-axis unfolds into two saddle-node fold curves meeting at the cusp,
+    exactly as Beer's
     parameter-space analysis predicts.
   evidence_for:
-    - "Single-neuron fold: 1 equilibrium at self-weight 1.0, 3 at 8.0 (center-crossing)."
-    - "Codim-2 (w, θ) map shows a connected bistable wedge bounded by the fold curve."
+    - "Single-neuron pitchfork (center-crossing): 1 equilibrium at self-weight 1.0, 3 at 8.0."
+    - "Codim-2 (w, θ) map shows a connected bistable wedge bounded by two saddle-node fold curves meeting at a cusp."
     - "2-neuron center-crossing circuit [[4.5,1],[-1,4.5]] sustains oscillation; interior equilibrium is unstable."
   evidence_against: []
   key_figures:
     - "figures/phase_portrait.png — 2-neuron phase portrait with nullclines + equilibrium"
-    - "figures/bifurcation.png — codim-1 fold, 1→3 equilibria vs self-weight"
+    - "figures/bifurcation.png — codim-1 pitchfork (center-crossing), 1→3 equilibria vs self-weight"
     - "figures/codim2.png — codim-2 equilibrium-count map over (w, θ)"
   caveats:
     - "Equilibria are found by multi-start root finding; counts depend on search breadth (fixed seed used)."
@@ -80,13 +84,15 @@ biological_story: |
 
 at_a_glance:
   - {study: param-space-equilibria-and-nullclines, role: "2-neuron phase geometry: nullclines, equilibrium, oscillation"}
-  - {study: param-space-codim1-bifurcations, role: "single-neuron fold: 1→3 equilibria vs self-weight (Beer 2006)"}
+  - {study: param-space-codim1-bifurcations, role: "single-neuron pitchfork (center-crossing): 1→3 equilibria vs self-weight (Beer 2006)"}
   - {study: param-space-codim2-structure, role: "bistability wedge in (self-weight, bias) (Beer 2022)"}
 
 glossary:
   - {term: "CTRNN", definition: "Continuous-time recurrent neural network; τ_i ẏ_i = −y_i + Σ_j w_ij σ(y_j+θ_j) + I_i."}
   - {term: "Center-crossing", definition: "Bias set so each neuron's sigmoid is centered given its total input: θ_i = −Σ_j w_ij/2."}
   - {term: "Saddle-node (fold)", definition: "A bifurcation where two equilibria (one stable, one unstable) are created or annihilated."}
+  - {term: "Pitchfork", definition: "A symmetry-breaking bifurcation: one equilibrium becomes three (the central one loses stability, two symmetric stable ones appear)."}
+  - {term: "Cusp", definition: "Codimension-2 point where two saddle-node fold curves meet; the center-crossing pitchfork is its symmetric axis."}
   - {term: "Codimension-2", definition: "Structure seen when two parameters vary; here the cusp organising the fold curves."}
 
 studies:
@@ -97,7 +103,7 @@ studies:
 expert_docs: []
 acceptance_criteria:
   - {study: param-space-equilibria-and-nullclines, behavior: two-neuron-oscillates}
-  - {study: param-space-codim1-bifurcations, behavior: single-neuron-fold-1-to-3}
+  - {study: param-space-codim1-bifurcations, behavior: single-neuron-pitchfork-1-to-3}
   - {study: param-space-codim2-structure, behavior: bistable-wedge-present}
 
 competing_frameworks:
