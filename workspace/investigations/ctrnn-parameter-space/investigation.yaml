@@ -1,0 +1,106 @@
+# ctrnn-parameter-space/investigation.yaml — schema v2
+schema_version: 2
+name: ctrnn-parameter-space
+title: "CTRNN Parameter-Space Structure"
+created: '2026-10-03'
+status: running
+
+question: |
+  How is the dynamical repertoire of a small continuous-time recurrent neural
+  network (CTRNN) — the "brain" shared by all of Beer's brain-body-environment
+  agents — organized as a function of its parameters (self-weights and biases)?
+  Where do equilibria appear and disappear, and what is the codimension-1 and
+  codimension-2 structure of those bifurcations?
+
+hypothesis: |
+  A single self-excitatory center-crossing neuron undergoes a saddle-node
+  (fold) bifurcation from one equilibrium to three (bistability) as its
+  self-weight increases, and the set of such transitions forms a cusp-shaped
+  wedge in the (self-weight, bias) plane — the codimension-2 organizing
+  structure described by Beer (2006, 2022). A two-neuron center-crossing
+  circuit with mixed-sign mutual coupling can lose stability of its interior
+  equilibrium and oscillate.
+
+lead: |
+  Before a CTRNN can steer a body through an environment it must have dynamics
+  worth steering with. This investigation characterises the bare brain: the
+  equilibria, their stability, and the bifurcations that reshape them, for the
+  smallest CTRNNs. It is the dynamical-systems foundation every embodied Beer
+  model in this repository builds on.
+
+executive:
+  what_is_this: |
+    A brain-only study of CTRNN dynamics — no body, no environment. We compute
+    equilibria, Jacobian eigenvalues, nullclines, and bifurcation structure for
+    1- and 2-neuron CTRNNs, reproducing the parameter-space picture from Beer
+    (2006, 2022).
+  verdict: |
+    The expected saddle-node / bistability structure is reproduced: a single
+    center-crossing neuron goes 1→3 equilibria with increasing self-weight, the
+    bistable region forms a cusp wedge in (w, θ), and a 2-neuron center-crossing
+    circuit oscillates (interior equilibrium unstable).
+  verdict_status: passed
+  verdict_detail: |
+    All three studies' acceptance behaviours hold from the workspace's own
+    numpy/scipy analysis code (equilibria via multi-start root finding, stability
+    via Jacobian eigenvalues), verified in the test suite.
+  decisions_needed: []
+
+scientific_argument:
+  main_claim: |
+    The equilibrium structure of small center-crossing CTRNNs is organised by a
+    cusp: a saddle-node fold creating bistability, exactly as Beer's
+    parameter-space analysis predicts.
+  evidence_for:
+    - "Single-neuron fold: 1 equilibrium at self-weight 1.0, 3 at 8.0 (center-crossing)."
+    - "Codim-2 (w, θ) map shows a connected bistable wedge bounded by the fold curve."
+    - "2-neuron center-crossing circuit [[4.5,1],[-1,4.5]] sustains oscillation; interior equilibrium is unstable."
+  evidence_against: []
+  key_figures:
+    - "figures/phase_portrait.png — 2-neuron phase portrait with nullclines + equilibrium"
+    - "figures/bifurcation.png — codim-1 fold, 1→3 equilibria vs self-weight"
+    - "figures/codim2.png — codim-2 equilibrium-count map over (w, θ)"
+  caveats:
+    - "Equilibria are found by multi-start root finding; counts depend on search breadth (fixed seed used)."
+    - "This is pure brain dynamics; embodied consequences are studied in the other investigations."
+
+biological_story: |
+  A continuous-time recurrent neural network is the minimal nervous system Beer
+  evolves for his model agents: each neuron integrates weighted sigmoidal input
+  from the others toward an equilibrium set by its bias and self-connection.
+  Whether such a network can latch a decision, hold a memory, or generate a
+  rhythm is a question about its dynamics, not its wiring diagram alone. A single
+  neuron with strong self-excitation becomes bistable — two stable rest states
+  separated by an unstable threshold — the dynamical substrate of a binary
+  memory. Where exactly that bistability switches on, as the self-weight and bias
+  vary, traces a cusp in parameter space. Two neurons coupled with opposite-sign
+  reciprocal connections can instead destabilise their shared equilibrium and
+  circle it forever — a central pattern generator in miniature. These are the
+  dynamical building blocks the embodied agents in this repository recruit.
+
+at_a_glance:
+  - {study: param-space-equilibria-and-nullclines, role: "2-neuron phase geometry: nullclines, equilibrium, oscillation"}
+  - {study: param-space-codim1-bifurcations, role: "single-neuron fold: 1→3 equilibria vs self-weight (Beer 2006)"}
+  - {study: param-space-codim2-structure, role: "bistability wedge in (self-weight, bias) (Beer 2022)"}
+
+glossary:
+  - {term: "CTRNN", definition: "Continuous-time recurrent neural network; τ_i ẏ_i = −y_i + Σ_j w_ij σ(y_j+θ_j) + I_i."}
+  - {term: "Center-crossing", definition: "Bias set so each neuron's sigmoid is centered given its total input: θ_i = −Σ_j w_ij/2."}
+  - {term: "Saddle-node (fold)", definition: "A bifurcation where two equilibria (one stable, one unstable) are created or annihilated."}
+  - {term: "Codimension-2", definition: "Structure seen when two parameters vary; here the cusp organising the fold curves."}
+
+studies:
+  - param-space-equilibria-and-nullclines
+  - param-space-codim1-bifurcations
+  - param-space-codim2-structure
+
+expert_docs: []
+acceptance_criteria:
+  - {study: param-space-equilibria-and-nullclines, behavior: two-neuron-oscillates}
+  - {study: param-space-codim1-bifurcations, behavior: single-neuron-fold-1-to-3}
+  - {study: param-space-codim2-structure, behavior: bistable-wedge-present}
+
+competing_frameworks:
+  - {name: "Connectionist (weights-as-representation) view", relation: "contrasts-with — here behaviour is read from dynamics (equilibria/bifurcations), not weight patterns"}
+
+narrative_spine_skip: []

@@ -1,0 +1,55 @@
+schema_version: 3
+name: param-space-codim2-structure
+investigation: ctrnn-parameter-space
+title: "Codim-2 Bistability Wedge (Beer 2022)"
+status: ran
+confidence: Accepted
+
+question: |
+  How is the single-neuron saddle-node fold organised when both the self-weight
+  and the bias vary — what is the shape of the bistable region in the
+  (self-weight, bias) plane?
+
+hypothesis: |
+  The folds bound a connected cusp-shaped wedge of bistability (three equilibria)
+  that opens as self-weight increases — the codimension-2 organising structure of
+  Beer (2022).
+
+objective: |
+  Compute the equilibrium count over a 2-D grid of (self-weight, bias) for a
+  single neuron and render the parameter-plane map, identifying the bistable
+  wedge.
+
+claim: |
+  Bistability occupies a connected cusp wedge in (self-weight, bias), reproducing
+  the codim-2 structure of Beer (2022).
+
+description: |
+  `param_space.codim2_equilibria_count` evaluates the equilibrium count over the
+  (w, θ) grid; the gallery renders it as a heatmap. A bistable (3-equilibria)
+  region is present and connected, bounded by the fold curve; cells exactly on the
+  fold can register 2 equilibria.
+
+expected_behavior:
+  - name: bistable-wedge-present
+    observable: max-equilibrium-count
+    condition: "single neuron, grid over self-weight × bias"
+    rationale: |
+      The maximum equilibrium count over the grid is 3, and the 3-equilibria cells
+      form a connected wedge opening toward high self-weight — the cusp.
+
+findings:
+  - summary: "Connected bistable wedge found; max equilibrium count = 3 over the grid."
+    detail: |
+      The codim-2 map (figures/codim2.png) shows a yellow (3-equilibria) wedge
+      opening at high self-weight and bounded by the fold curve, with a boundary
+      cell at exactly 2 equilibria sitting on the fold.
+
+figures:
+  - path: ../../figures/codim2.png
+    caption: "Codim-2 equilibrium-count map over (self-weight, bias); yellow = bistable wedge."
+
+baseline: []
+variants: []
+interventions: []
+runs: []

@@ -1,0 +1,53 @@
+schema_version: 3
+name: param-space-codim1-bifurcations
+investigation: ctrnn-parameter-space
+title: "Codim-1 Fold: 1→3 Equilibria (Beer 2006)"
+status: ran
+confidence: Accepted
+
+question: |
+  As the self-weight of a single center-crossing CTRNN neuron increases, how does
+  its equilibrium set change, and at what point does bistability appear?
+
+hypothesis: |
+  The neuron has one equilibrium at low self-weight and, past a saddle-node fold,
+  three equilibria (two stable, one unstable) — the codimension-1 bifurcation
+  structure of Beer (2006).
+
+objective: |
+  Sweep the self-weight of a single center-crossing neuron, count equilibria and
+  classify their stability at each value, and render the bifurcation diagram.
+
+claim: |
+  A single center-crossing neuron undergoes a saddle-node fold from 1 to 3
+  equilibria as self-weight grows, reproducing Beer (2006).
+
+description: |
+  Built on `analysis.bifurcation_sweep` over a self-weight grid, with
+  `viz.bifurcation_diagram` colouring branches by stability. The 1→3 transition
+  is pinned in the test suite (1 equilibrium at w=1.0, 3 at w=8.0).
+
+expected_behavior:
+  - name: single-neuron-fold-1-to-3
+    observable: equilibrium-count
+    condition: "single center-crossing neuron, self-weight 1.0 → 8.0, I = 0"
+    rationale: |
+      At w=1.0 there is a unique equilibrium; past the fold (by w=8.0) there are
+      three — two stable outer branches and one unstable middle branch — the
+      saddle-node signature.
+
+findings:
+  - summary: "Fold confirmed: 1 equilibrium at w=1.0, 3 at w=8.0 (two stable, one unstable)."
+    detail: |
+      The bifurcation diagram (figures/bifurcation.png) shows the single branch
+      splitting into three as self-weight increases, with the middle branch
+      unstable (red) and the outer branches stable (black).
+
+figures:
+  - path: ../../figures/bifurcation.png
+    caption: "Codim-1 bifurcation: equilibria vs self-weight; black = stable, red = unstable."
+
+baseline: []
+variants: []
+interventions: []
+runs: []
