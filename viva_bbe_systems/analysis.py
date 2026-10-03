@@ -49,3 +49,31 @@ def eigenvalues(net: CTRNN, y) -> np.ndarray:
 
 def is_stable(net: CTRNN, y) -> bool:
     return bool(np.all(eigenvalues(net, y).real < 0.0))
+
+
+def nullcline_grid(net: CTRNN, I, neuron, y_range, resolution=200):
+    assert net.size == 2, "nullcline_grid is for 2-neuron systems"
+    I = np.asarray(I, dtype=float)
+    axis = np.linspace(y_range[0], y_range[1], resolution)
+    Y1, Y2 = np.meshgrid(axis, axis)
+    Z = np.zeros_like(Y1)
+    for a in range(resolution):
+        for b in range(resolution):
+            y = np.array([Y1[a, b], Y2[a, b]])
+            Z[a, b] = net.derivatives(y, I)[neuron]
+    return Y1, Y2, Z
+
+
+def bifurcation_sweep(net_factory, param_values, I=0.0, rng=None):
+    rng = np.random.default_rng() if rng is None else rng
+    results = []
+    for v in param_values:
+        net = net_factory(v)
+        Ivec = np.full(net.size, I) if np.isscalar(I) else np.asarray(I)
+        eqs = equilibria(net, Ivec, rng=rng)
+        results.append({
+            "value": v,
+            "equilibria": eqs,
+            "stability": [is_stable(net, e) for e in eqs],
+        })
+    return results
