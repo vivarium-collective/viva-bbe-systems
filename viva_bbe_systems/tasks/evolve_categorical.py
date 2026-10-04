@@ -19,7 +19,7 @@ def cat_bounds(spec: CatGenomeSpec):
     return lo, hi
 
 
-def evolve_categorical(*, pop_size=60, generations=80, seed=0, mutation_sd=0.8) -> dict:
+def evolve_categorical(*, pop_size=80, generations=100, seed=0, mutation_sd=0.8) -> dict:
     spec = CatGenomeSpec()
     lo, hi = cat_bounds(spec)
     return evolve_flat(make_fitness(spec), cat_genome_length(spec), lo, hi,

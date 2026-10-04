@@ -15,7 +15,7 @@ class CategoricalAgent:
         self.catch_radius = float(catch_radius)
 
     def run_trial(self, obj_offset, shape, *, H=20.0, vy=1.0, dt=0.1, steps=200,
-                  obj_size=1.0, start_x=0.0):
+                  obj_size=3.0, start_x=0.0):
         self.ctrnn.reset(np.zeros(self.ctrnn.size))
         self.body.x = float(start_x)
         obj = FallingObject(center=np.array([float(obj_offset), H]), vy=vy,
