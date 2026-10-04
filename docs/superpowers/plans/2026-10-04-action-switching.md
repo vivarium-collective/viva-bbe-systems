@@ -18,6 +18,7 @@
 - Nutrients: two levels in [0,10]; `+0.02`/step inside the matching resource boundary; `−0.0045`/step always (constant metabolism). A level reaching 0 → death (trial ends). Trial halts at 5000 steps if alive.
 - Motion: `MaxAngle=π/12`, `MaxThrust=0.008`; `torque=(o_right−o_left)·MaxAngle`; `thrust=(o_right+o_left)·MaxThrust`; `velocity_t = 0.9·velocity_{t−1} + Δt·thrust`; `angle_t = angle_{t−1} + Δt·torque`; position advances by `velocity` along `angle`. Clamp position to the plane.
 - Brain: shared `CTRNN` (Eq 1). Chemosensor neurons get `I=conc`; nutrient-sensor neurons get `I=nutrient level`; all other neurons `I=0`. Genome = CTRNN `(τ,θ,w)` via the shared `GenomeSpec` with `tau_range=(1,10)`, `bias_range=(-15,15)`, `weight_range=(-15,15)`. GA: longevity fitness over 11 configs; mutation variance 0.25.
+- EVERY study.yaml MUST have a non-empty `baseline: [{name, composite|step|process, params}]` (the workbench study-detail render-guarantee rejects `baseline: []`). Action-switching studies reference the forager BBE composite (T7) or `process: ForagerAgent`/`CTRNNProcess`.
 - Reuse the shipped core unchanged (no edits to `ctrnn.py`, `genome.py`, `evolution.py`, `core.py`). No AI attribution in commits. Investigation + studies on `main` under `workspace/investigations/action-switching/`.
 
 ## Review Focus
