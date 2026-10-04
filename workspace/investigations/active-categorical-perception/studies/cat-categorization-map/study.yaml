@@ -1,67 +1,88 @@
 schema_version: 3
 name: cat-categorization-map
 investigation: active-categorical-perception
-title: "Categorization Map & Generalization Edge"
+title: Categorization Map & Generalization Edge
 status: ran
 confidence: Accepted
+question: 'How does the agent''s final distance to the object vary with the object''s
 
-question: |
-  How does the agent's final distance to the object vary with the object's
   horizontal offset, for circles vs diamonds — and does the categorization hold
+
   beyond the trained offset range?
 
-hypothesis: |
-  Across offsets the circle curve stays near zero (caught) and the diamond curve
-  stays high (avoided), giving two well-separated bands — Beer's categorization
+  '
+hypothesis: 'Across offsets the circle curve stays near zero (caught) and the diamond curve
+
+  stays high (avoided), giving two well-separated bands — Beer''s categorization
+
   plot — though generalization may fail past the trained range.
 
-objective: |
-  Sweep object offset from −8 to +8 for both shapes, measure final distance, and
+  '
+objective: 'Sweep object offset from −8 to +8 for both shapes, measure final distance, and
+
   render the categorization map.
 
-claim: |
-  Circles and diamonds form two separated bands across −8..+6 (catch vs avoid);
+  '
+claim: 'Circles and diamonds form two separated bands across −8..+6 (catch vs avoid);
+
   the separation collapses at offset ≥7 (untrained), an honest generalization edge.
 
-description: |
-  The committed seed is replayed over 33 offsets in [−8, 8] for each shape. The
+  '
+description: 'The committed seed is replayed over 33 offsets in [−8, 8] for each shape. The
+
   map is the signature categorization plot of Beer (2003).
 
+  '
 expected_behavior:
-  - name: category-separation-across-offsets
-    observable: final-horizontal-distance-vs-offset
-    condition: "committed seed, offsets linspace(−8,8,33), both shapes"
-    rationale: |
-      Over the trained band (−6..+6) circles end < catch radius and diamonds end
-      far (> 20); the two bands do not overlap. Outside training (|offset| ≥ 7)
-      diamonds are no longer reliably avoided — reported, not hidden.
+- name: category-separation-across-offsets
+  observable: final-horizontal-distance-vs-offset
+  condition: committed seed, offsets linspace(−8,8,33), both shapes
+  rationale: 'Over the trained band (−6..+6) circles end < catch radius and diamonds end
 
+    far (> 20); the two bands do not overlap. Outside training (|offset| ≥ 7)
+
+    diamonds are no longer reliably avoided — reported, not hidden.
+
+    '
 findings:
-  - summary: "Two separated bands across −8..+6; diamond avoidance fails at offset ≥7 (generalization edge)."
-    detail: |
-      figures/categorization_map.png: the circle band hugs 0 (below the catch
-      radius) everywhere; the diamond band sits at 25–40 across −8..+6 then drops
-      to ~0.5 at offset ≥7, where the object sits at the edge of the sensor fan
-      beyond the training distribution.
+- summary: Two separated bands across −8..+6; diamond avoidance fails at offset ≥7 (generalization edge).
+  detail: 'figures/categorization_map.png: the circle band hugs 0 (below the catch
 
-figures:
-  - path: ../../figures/categorization_map.png
-    caption: "Final distance vs object offset; circles caught (near 0), diamonds avoided (high), with a generalization failure at the right edge."
-  - path: ../../figures/solve_circle.gif
-    caption: "Video — the best agent catching a circle."
-  - path: ../../figures/solve_diamond.gif
-    caption: "Video — the best agent avoiding a diamond."
-  - path: ../../figures/brain_phase.gif
-    caption: "Dynamical analysis — motor-neuron state trajectory, catch vs avoid."
-  - path: ../../figures/evolution_curves.png
-    caption: "Evolution — fitness and category separation emerging over generations."
+    radius) everywhere; the diamond band sits at 25–40 across −8..+6 then drops
 
+    to ~0.5 at offset ≥7, where the object sits at the edge of the sensor fan
+
+    beyond the training distribution.
+
+    '
 baseline:
-  - name: categorical-agent
-    composite: viva_bbe_systems.composites.categorical_perception
-    params:
-      offset: 3.0
-      shape: circle
+- name: categorical-agent
+  composite: viva_bbe_systems.composites.categorical_perception
+  params:
+    offset: 3.0
+    shape: circle
 variants: []
 interventions: []
 runs: []
+visualizations:
+- name: categorization map
+  chart: ../../figures/categorization_map.png
+  config:
+    caption: Final distance vs object offset; circles caught (near 0), diamonds avoided (high), with a
+      generalization failure at the right edge.
+- name: solve circle
+  chart: ../../figures/solve_circle.gif
+  config:
+    caption: Video — the best agent catching a circle.
+- name: solve diamond
+  chart: ../../figures/solve_diamond.gif
+  config:
+    caption: Video — the best agent avoiding a diamond.
+- name: brain phase
+  chart: ../../figures/brain_phase.gif
+  config:
+    caption: Dynamical analysis — motor-neuron state trajectory, catch vs avoid.
+- name: evolution curves
+  chart: ../../figures/evolution_curves.png
+  config:
+    caption: Evolution — fitness and category separation emerging over generations.

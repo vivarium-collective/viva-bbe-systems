@@ -1,70 +1,96 @@
 schema_version: 3
 name: param-space-codim1-bifurcations
 investigation: ctrnn-parameter-space
-title: "Codim-1 Pitchfork: 1→3 Equilibria (Beer 2006)"
+title: 'Codim-1 Pitchfork: 1→3 Equilibria (Beer 2006)'
 status: ran
 confidence: Accepted
+question: 'As the self-weight of a single center-crossing CTRNN neuron increases, how does
 
-question: |
-  As the self-weight of a single center-crossing CTRNN neuron increases, how does
   its equilibrium set change, and at what point does bistability appear?
 
-hypothesis: |
-  On the center-crossing (symmetric) slice, the neuron has one equilibrium at low
+  '
+hypothesis: 'On the center-crossing (symmetric) slice, the neuron has one equilibrium at low
+
   self-weight and, past a pitchfork at w≈4, three equilibria (two stable, one
+
   unstable) — the codimension-1 bifurcation structure of Beer (2006). The central
+
   equilibrium (output 0.5) loses stability and two symmetric stable equilibria
+
   appear.
 
-objective: |
-  Sweep the self-weight of a single center-crossing neuron, count equilibria and
+  '
+objective: 'Sweep the self-weight of a single center-crossing neuron, count equilibria and
+
   classify their stability at each value, and render the bifurcation diagram.
 
-claim: |
-  On the center-crossing (symmetric, θ=−w/2) slice, a single neuron undergoes a
+  '
+claim: 'On the center-crossing (symmetric, θ=−w/2) slice, a single neuron undergoes a
+
   pitchfork bifurcation at w≈4 from 1 to 3 equilibria as self-weight grows,
+
   reproducing Beer (2006). Off this slice the pitchfork unfolds into saddle-node
+
   folds (see the codim-2 study).
 
-description: |
-  Built on `analysis.bifurcation_sweep` over a self-weight grid, with
+  '
+description: 'Built on `analysis.bifurcation_sweep` over a self-weight grid, with
+
   `viz.bifurcation_diagram` colouring branches by stability. The 1→3 transition
+
   is pinned in the test suite (1 equilibrium at w=1.0, 3 at w=8.0).
 
+  '
 expected_behavior:
-  - name: single-neuron-pitchfork-1-to-3
-    observable: equilibrium-count
-    condition: "single center-crossing neuron, self-weight 1.0 → 8.0, I = 0"
-    rationale: |
-      On the center-crossing symmetric slice, at w=1.0 there is a unique
-      equilibrium; past the pitchfork at w≈4 (by w=8.0) there are three — two
-      stable outer branches and the now-unstable central branch — the symmetric
-      pitchfork signature (not a fold: the branches emerge symmetrically from the
-      central equilibrium).
+- name: single-neuron-pitchfork-1-to-3
+  observable: equilibrium-count
+  condition: single center-crossing neuron, self-weight 1.0 → 8.0, I = 0
+  rationale: 'On the center-crossing symmetric slice, at w=1.0 there is a unique
 
+    equilibrium; past the pitchfork at w≈4 (by w=8.0) there are three — two
+
+    stable outer branches and the now-unstable central branch — the symmetric
+
+    pitchfork signature (not a fold: the branches emerge symmetrically from the
+
+    central equilibrium).
+
+    '
 findings:
-  - summary: "Pitchfork confirmed (center-crossing slice): 1 equilibrium at w=1.0, 3 at w=8.0 (two stable, one unstable)."
-    detail: |
-      The bifurcation diagram (figures/bifurcation.png), on the center-crossing
-      symmetric slice, shows the single branch splitting symmetrically into three
-      at w≈4 as self-weight increases, with the middle branch unstable (red) and
-      the outer branches stable (black).
+- summary: 'Pitchfork confirmed (center-crossing slice): 1 equilibrium at w=1.0, 3 at w=8.0 (two stable,
+    one unstable).'
+  detail: 'The bifurcation diagram (figures/bifurcation.png), on the center-crossing
 
-figures:
-  - path: ../../figures/bifurcation.png
-    caption: "Codim-1 bifurcation: equilibria vs self-weight; black = stable, red = unstable."
+    symmetric slice, shows the single branch splitting symmetrically into three
 
-  - path: ../../figures/phase_trajectory.gif
-    caption: "Video (dynamical analysis) — an illustrative 2-neuron CTRNN oscillator trajectory (the codim-1 study itself analyzes a single self-excitatory neuron)."
+    at w≈4 as self-weight increases, with the middle branch unstable (red) and
 
+    the outer branches stable (black).
+
+    '
 baseline:
-  - name: ctrnn-brain
-    process: CTRNNProcess
-    params:
-      size: 2
-      weights: [[4.5, 1.0], [-1.0, 4.5]]
-      center_crossing: true
-      motor_indices: [1]
+- name: ctrnn-brain
+  process: CTRNNProcess
+  params:
+    size: 2
+    weights:
+    - - 4.5
+      - 1.0
+    - - -1.0
+      - 4.5
+    center_crossing: true
+    motor_indices:
+    - 1
 variants: []
 interventions: []
 runs: []
+visualizations:
+- name: bifurcation
+  chart: ../../figures/bifurcation.png
+  config:
+    caption: 'Codim-1 bifurcation: equilibria vs self-weight; black = stable, red = unstable.'
+- name: phase trajectory
+  chart: ../../figures/phase_trajectory.gif
+  config:
+    caption: Video (dynamical analysis) — an illustrative 2-neuron CTRNN oscillator trajectory (the codim-1
+      study itself analyzes a single self-excitatory neuron).

@@ -1,72 +1,98 @@
 schema_version: 3
 name: param-space-equilibria-and-nullclines
 investigation: ctrnn-parameter-space
-title: "Equilibria, Nullclines & Oscillation (2-neuron)"
+title: Equilibria, Nullclines & Oscillation (2-neuron)
 status: ran
 confidence: Accepted
+question: 'What is the phase-plane geometry of a two-neuron center-crossing CTRNN with
 
-question: |
-  What is the phase-plane geometry of a two-neuron center-crossing CTRNN with
   mixed-sign reciprocal coupling — where are its nullclines and equilibrium, and
+
   is that equilibrium stable or does the circuit oscillate?
 
-hypothesis: |
-  The two nullclines intersect at a single interior equilibrium whose Jacobian
+  '
+hypothesis: 'The two nullclines intersect at a single interior equilibrium whose Jacobian
+
   has eigenvalues with positive real part, so the circuit does not settle but
+
   sustains a limit-cycle oscillation.
 
-objective: |
-  Compute the nullclines and equilibria of the 2-neuron net [[4.5,1],[-1,4.5]]
+  '
+objective: 'Compute the nullclines and equilibria of the 2-neuron net [[4.5,1],[-1,4.5]]
+
   with center-crossing biases, classify the equilibrium by Jacobian eigenvalues,
+
   and confirm sustained oscillation of the integrated trajectory.
 
-claim: |
-  The 2-neuron center-crossing circuit has a single unstable interior
+  '
+claim: 'The 2-neuron center-crossing circuit has a single unstable interior
+
   equilibrium and oscillates — a minimal central pattern generator.
 
-description: |
-  Using the workspace's `analysis` layer (nullcline grid, multi-start equilibria,
+  '
+description: 'Using the workspace''s `analysis` layer (nullcline grid, multi-start equilibria,
+
   Jacobian eigenvalues) and `viz.phase_portrait_2d`, we render the phase portrait
+
   and read off the geometry. The sustained-oscillation behaviour is also pinned
+
   by the CTRNN test suite (tail output range well above a settle threshold).
 
+  '
 expected_behavior:
-  - name: two-neuron-oscillates
-    observable: output-trajectory-range
-    condition: "weights [[4.5,1],[-1,4.5]], center-crossing biases, 20000 steps @ dt=0.01"
-    rationale: |
-      A center-crossing circuit with opposite-sign reciprocal coupling and strong
-      self-excitation destabilises its interior equilibrium; the tail range of a
-      neuron's output stays well above 0.05 (observed ≈ 0.62), i.e. it oscillates.
-  - name: single-interior-equilibrium
-    observable: equilibrium-count
-    condition: "same net, I = 0"
-    rationale: |
-      The nullclines intersect once in the relevant region; multi-start root
-      finding returns a single interior equilibrium, which the Jacobian classifies
-      as unstable (positive-real-part eigenvalues).
+- name: two-neuron-oscillates
+  observable: output-trajectory-range
+  condition: weights [[4.5,1],[-1,4.5]], center-crossing biases, 20000 steps @ dt=0.01
+  rationale: 'A center-crossing circuit with opposite-sign reciprocal coupling and strong
 
+    self-excitation destabilises its interior equilibrium; the tail range of a
+
+    neuron''s output stays well above 0.05 (observed ≈ 0.62), i.e. it oscillates.
+
+    '
+- name: single-interior-equilibrium
+  observable: equilibrium-count
+  condition: same net, I = 0
+  rationale: 'The nullclines intersect once in the relevant region; multi-start root
+
+    finding returns a single interior equilibrium, which the Jacobian classifies
+
+    as unstable (positive-real-part eigenvalues).
+
+    '
 findings:
-  - summary: "Single interior equilibrium, unstable; circuit oscillates (tail range ≈ 0.62)."
-    detail: |
-      Phase portrait (figures/phase_portrait.png) shows the two nullclines crossing
-      at one interior point marked as unstable; the vector field circulates around
-      it, consistent with the sustained oscillation measured in the suite.
+- summary: Single interior equilibrium, unstable; circuit oscillates (tail range ≈ 0.62).
+  detail: 'Phase portrait (figures/phase_portrait.png) shows the two nullclines crossing
 
-figures:
-  - path: ../../figures/phase_portrait.png
-    caption: "2-neuron center-crossing CTRNN: vector field, both nullclines, and the unstable interior equilibrium."
-  - path: ../../figures/phase_trajectory.gif
-    caption: "Video (dynamical analysis) — a state trajectory spiralling off the unstable equilibrium toward the limit cycle."
+    at one interior point marked as unstable; the vector field circulates around
 
+    it, consistent with the sustained oscillation measured in the suite.
+
+    '
 baseline:
-  - name: ctrnn-brain
-    process: CTRNNProcess
-    params:
-      size: 2
-      weights: [[4.5, 1.0], [-1.0, 4.5]]
-      center_crossing: true
-      motor_indices: [1]
+- name: ctrnn-brain
+  process: CTRNNProcess
+  params:
+    size: 2
+    weights:
+    - - 4.5
+      - 1.0
+    - - -1.0
+      - 4.5
+    center_crossing: true
+    motor_indices:
+    - 1
 variants: []
 interventions: []
 runs: []
+visualizations:
+- name: phase portrait
+  chart: ../../figures/phase_portrait.png
+  config:
+    caption: '2-neuron center-crossing CTRNN: vector field, both nullclines, and the unstable interior
+      equilibrium.'
+- name: phase trajectory
+  chart: ../../figures/phase_trajectory.gif
+  config:
+    caption: Video (dynamical analysis) — a state trajectory spiralling off the unstable equilibrium toward
+      the limit cycle.
