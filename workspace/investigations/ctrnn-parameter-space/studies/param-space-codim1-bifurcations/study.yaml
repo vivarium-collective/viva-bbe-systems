@@ -54,6 +54,9 @@ figures:
   - path: ../../figures/bifurcation.png
     caption: "Codim-1 bifurcation: equilibria vs self-weight; black = stable, red = unstable."
 
+  - path: ../../figures/phase_trajectory.gif
+    caption: "Video (dynamical analysis) — CTRNN state trajectory underlying the bifurcating dynamics (2-neuron oscillator)."
+
 baseline: []
 variants: []
 interventions: []

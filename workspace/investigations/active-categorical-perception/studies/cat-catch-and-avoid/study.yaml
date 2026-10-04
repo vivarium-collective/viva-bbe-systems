@@ -46,6 +46,16 @@ findings:
 figures:
   - path: ../../figures/trajectories.png
     caption: "Agent horizontal position over time: tracks circles (left), flees diamonds (right), five offsets each."
+  - path: ../../figures/solve_circle.gif
+    caption: "Video — the best agent catching a circle: sensor rays converge as it slides underneath."
+  - path: ../../figures/solve_diamond.gif
+    caption: "Video — the best agent avoiding a diamond: it accelerates away once the shape is resolved."
+  - path: ../../figures/brain_phase.gif
+    caption: "Dynamical analysis — the two motor neurons' state trajectory diverges for catch (blue) vs avoid (red)."
+  - path: ../../figures/evolution_curves.png
+    caption: "Evolution — best fitness and the emerging category separation (circle distance falls, diamond rises)."
+  - path: ../../figures/evolution_progress.gif
+    caption: "Evolution — the best agent's catch trajectory improving across generations."
 
 baseline: []
 variants: []

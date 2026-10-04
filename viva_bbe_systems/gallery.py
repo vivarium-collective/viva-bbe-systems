@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .ctrnn import CTRNN
+from .analysis import nullcline_grid
 from .param_space import single_neuron_net, two_neuron_net, codim2_equilibria_count
 from .viz import phase_portrait_2d, bifurcation_diagram
 
@@ -59,8 +60,45 @@ def _single_neuron_with_bias(self_weight, bias):
     return net
 
 
+def animate_phase_trajectory(net, path, *, y0=(0.1, -0.1), steps=1200, stride=6,
+                             y_range=(-6, 10)):
+    """GIF (brain-only 'video'): a state trajectory tracing the 2-neuron
+    oscillator's limit cycle, over the nullclines + vector field."""
+    from .anim import save_gif
+    net.reset(np.array(y0, dtype=float))
+    traj = np.zeros((steps, 2))
+    for t in range(steps):
+        net.step()
+        traj[t] = net.y
+    fig, ax = plt.subplots(figsize=(5.8, 5.6))
+    axis = np.linspace(*y_range, 22)
+    Y1, Y2 = np.meshgrid(axis, axis)
+    U = np.zeros_like(Y1); V = np.zeros_like(Y2)
+    for a in range(Y1.shape[0]):
+        for b in range(Y1.shape[1]):
+            d = net.derivatives(np.array([Y1[a, b], Y2[a, b]]), np.zeros(2))
+            U[a, b], V[a, b] = d
+    ax.quiver(Y1, Y2, U, V, color="0.8", pivot="mid")
+    for neuron, color in [(0, "#1f77b4"), (1, "#d62728")]:
+        G1, G2, Z = nullcline_grid(net, np.zeros(2), neuron, y_range, resolution=80)
+        ax.contour(G1, G2, Z, levels=[0.0], colors=[color], linewidths=1.3)
+    ax.set_xlim(*y_range); ax.set_ylim(*y_range)
+    ax.set_xlabel("y1"); ax.set_ylabel("y2")
+    ax.set_title("CTRNN state trajectory → limit cycle")
+    line, = ax.plot([], [], color="#11355e", lw=1.5)
+    head, = ax.plot([], [], "o", color="#11355e", ms=7)
+    frames = list(range(2, steps, stride))
+
+    def update(i):
+        line.set_data(traj[:i, 0], traj[:i, 1])
+        head.set_data([traj[i-1, 0]], [traj[i-1, 1]])
+        return [line, head]
+
+    return save_gif(fig, update, frames, path, fps=24, dpi=80)
+
+
 def render(outdir: Path, *, phase_res=25, bifurcation_points=40,
-           codim2_res=40) -> list[Path]:
+           codim2_res=40, animate=True) -> list[Path]:
     outdir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
 
@@ -90,6 +128,11 @@ def render(outdir: Path, *, phase_res=25, bifurcation_points=40,
     fig.savefig(p, dpi=150, bbox_inches="tight")
     plt.close(fig)
     written.append(p)
+
+    # 4. Animated phase-space trajectory (brain-only 'video' of the dynamics).
+    if animate:
+        net_osc = two_neuron_net(np.array([[4.5, 1.0], [-1.0, 4.5]]))
+        written.append(animate_phase_trajectory(net_osc, outdir / "phase_trajectory.gif"))
 
     return written
 

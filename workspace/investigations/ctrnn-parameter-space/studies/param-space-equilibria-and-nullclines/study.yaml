@@ -56,6 +56,8 @@ findings:
 figures:
   - path: ../../figures/phase_portrait.png
     caption: "2-neuron center-crossing CTRNN: vector field, both nullclines, and the unstable interior equilibrium."
+  - path: ../../figures/phase_trajectory.gif
+    caption: "Video (dynamical analysis) — a state trajectory spiralling off the unstable equilibrium toward the limit cycle."
 
 baseline: []
 variants: []

@@ -19,12 +19,32 @@ def cat_bounds(spec: CatGenomeSpec):
     return lo, hi
 
 
-def evolve_categorical(*, pop_size=80, generations=100, seed=0, mutation_sd=0.8) -> dict:
+def evolve_categorical(*, pop_size=80, generations=100, seed=0, mutation_sd=0.8,
+                       record_every=None) -> dict:
     spec = CatGenomeSpec()
     lo, hi = cat_bounds(spec)
     return evolve_flat(make_fitness(spec), cat_genome_length(spec), lo, hi,
                        pop_size=pop_size, generations=generations,
-                       mutation_sd=mutation_sd, seed=seed)
+                       mutation_sd=mutation_sd, seed=seed, record_every=record_every)
+
+
+CHECKPOINT_PATH = DEFAULT_PATH.parent / "categorical_evolution.npz"
+
+
+def save_checkpoints(result, path=CHECKPOINT_PATH) -> None:
+    """Persist the per-generation best-genome checkpoints + fitness history."""
+    cks = result["checkpoints"]
+    np.savez(path,
+             gens=np.array([c["gen"] for c in cks]),
+             genomes=np.stack([c["genome"] for c in cks]),
+             fitness=np.array([c["fitness"] for c in cks]),
+             history=np.array(result["history"], dtype=float))
+
+
+def load_checkpoints(path=CHECKPOINT_PATH) -> dict:
+    with np.load(path) as z:
+        return {"gens": np.array(z["gens"]), "genomes": np.array(z["genomes"]),
+                "fitness": np.array(z["fitness"]), "history": np.array(z["history"])}
 
 
 def save_seed(result, path) -> None:

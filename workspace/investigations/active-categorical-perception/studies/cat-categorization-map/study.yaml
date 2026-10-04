@@ -47,6 +47,14 @@ findings:
 figures:
   - path: ../../figures/categorization_map.png
     caption: "Final distance vs object offset; circles caught (near 0), diamonds avoided (high), with a generalization failure at the right edge."
+  - path: ../../figures/solve_circle.gif
+    caption: "Video — the best agent catching a circle."
+  - path: ../../figures/solve_diamond.gif
+    caption: "Video — the best agent avoiding a diamond."
+  - path: ../../figures/brain_phase.gif
+    caption: "Dynamical analysis — motor-neuron state trajectory, catch vs avoid."
+  - path: ../../figures/evolution_curves.png
+    caption: "Evolution — fitness and category separation emerging over generations."
 
 baseline: []
 variants: []

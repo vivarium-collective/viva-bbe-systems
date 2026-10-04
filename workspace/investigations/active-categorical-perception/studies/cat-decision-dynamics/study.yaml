@@ -46,6 +46,14 @@ findings:
 figures:
   - path: ../../figures/decision_dynamics.png
     caption: "Neuron outputs (left) and motor-neuron phase trajectory (right): catch (blue) vs avoid (red) at offset +3."
+  - path: ../../figures/brain_phase.gif
+    caption: "Dynamical analysis (animated) — the motor-neuron state point tracing its trajectory for catch vs avoid."
+  - path: ../../figures/solve_circle.gif
+    caption: "Video — the best agent catching a circle."
+  - path: ../../figures/solve_diamond.gif
+    caption: "Video — the best agent avoiding a diamond."
+  - path: ../../figures/evolution_progress.gif
+    caption: "Evolution — the best agent's catch trajectory improving across generations."
 
 baseline: []
 variants: []
