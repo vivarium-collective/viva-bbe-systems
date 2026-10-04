@@ -1,0 +1,53 @@
+schema_version: 3
+name: cat-decision-dynamics
+investigation: active-categorical-perception
+title: "Decision Dynamics (Catch vs Avoid)"
+status: ran
+confidence: Accepted
+
+question: |
+  How do the CTRNN's internal dynamics differ when the agent commits to catching
+  a circle versus avoiding a diamond presented at the same offset?
+
+hypothesis: |
+  The neuron-output trajectories (and the motor-neuron phase trajectory) start
+  together and then separate by category, showing that the decision is a
+  divergence in the coupled system's state over time, not a discrete switch.
+
+objective: |
+  Record the neuron outputs over a circle trial and a diamond trial at offset +3
+  and compare them, including the two motor neurons' phase trajectory.
+
+claim: |
+  The coupled neural dynamics commit differently to the two categories: outputs
+  and the motor-neuron phase trajectory diverge after a shared initial phase.
+
+description: |
+  The committed seed is run at offset +3 for a circle and a diamond; per-step
+  neuron outputs are recorded and plotted. This connects the behaviour to Beer's
+  dynamical reading of the decision.
+
+expected_behavior:
+  - name: neural-trajectories-separate-by-category
+    observable: neuron-output-trajectories
+    condition: "committed seed, offset +3, circle vs diamond, 200 steps @ dt=0.1"
+    rationale: |
+      The two trials share an early trajectory (active perception) then separate,
+      and the motor-neuron phase trajectory traces distinct paths for catch vs
+      avoid — the signature of a decision made in the system's state dynamics.
+
+findings:
+  - summary: "Neural trajectories share an early phase then diverge by category; motor-neuron phase paths differ."
+    detail: |
+      figures/decision_dynamics.png (left) shows neuron outputs for circle vs
+      diamond overlapping early then separating; (right) the two motor neurons'
+      phase trajectory traces distinct loops for catch vs avoid.
+
+figures:
+  - path: ../../figures/decision_dynamics.png
+    caption: "Neuron outputs (left) and motor-neuron phase trajectory (right): catch (blue) vs avoid (red) at offset +3."
+
+baseline: []
+variants: []
+interventions: []
+runs: []

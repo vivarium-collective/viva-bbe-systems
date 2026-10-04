@@ -1,0 +1,53 @@
+schema_version: 3
+name: cat-catch-and-avoid
+investigation: active-categorical-perception
+title: "Catch Circles, Avoid Diamonds"
+status: ran
+confidence: Accepted
+
+question: |
+  Does the evolved agent catch falling circles and avoid falling diamonds from
+  the committed seeded genome, across the trained range of object offsets?
+
+hypothesis: |
+  The agent ends close to circles (within the catch radius) and far from diamonds
+  at every trained offset (−6..+6), a clean behavioural categorization.
+
+objective: |
+  Replay the committed seed over the five training offsets × two shapes and
+  measure the final horizontal distance to the object for each.
+
+claim: |
+  The agent catches circles (mean final distance 0.15, caught at all offsets) and
+  avoids diamonds (mean final distance 29.6) — a category gap > 8.
+
+description: |
+  The seeded CTRNN agent (5 neurons, 7 ray sensors, 2 motors) is decoded from
+  data/genomes/categorical_perception.npz and run deterministically. The
+  behaviour is pinned by tests/test_categorical_seed.py.
+
+expected_behavior:
+  - name: catches-circles-avoids-diamonds
+    observable: final-horizontal-distance
+    condition: "committed seed, offsets −6..+6, objects size 3, 200 steps @ dt=0.1"
+    rationale: |
+      Circles: mean final distance < 1.5 (caught at every offset). Diamonds: mean
+      final distance > 10, with circle→diamond separation > 8. Verified in the
+      suite (test_seed_catches_circles_and_avoids_diamonds,
+      test_seed_catches_every_circle_offset).
+
+findings:
+  - summary: "Clean catch/avoid: circle mean fd 0.15 (all caught), diamond mean fd 29.6."
+    detail: |
+      figures/trajectories.png shows the agent converging onto each circle's
+      position and fleeing each diamond. The early trajectory is shared across
+      shapes (active perception) before the system commits.
+
+figures:
+  - path: ../../figures/trajectories.png
+    caption: "Agent horizontal position over time: tracks circles (left), flees diamonds (right), five offsets each."
+
+baseline: []
+variants: []
+interventions: []
+runs: []

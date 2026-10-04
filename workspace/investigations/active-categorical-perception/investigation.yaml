@@ -1,0 +1,114 @@
+# active-categorical-perception/investigation.yaml — schema v2
+schema_version: 2
+name: active-categorical-perception
+title: "Active Categorical Perception (Beer 2003)"
+created: '2026-10-03'
+status: running
+
+question: |
+  Can an evolved CTRNN agent, embodied with a fan of ray distance sensors and a
+  horizontal effector, perceptually categorize falling objects by shape —
+  catching circles while avoiding diamonds — purely through the dynamics of its
+  coupled brain–body–environment system, with no internal "shape" label?
+
+hypothesis: |
+  A small CTRNN evolved against a catch-circle / avoid-diamond task will produce
+  category-appropriate behaviour across a range of object offsets: it will move
+  under circles (minimizing final horizontal distance) and move away from
+  diamonds (maximizing it), reproducing the active categorical perception of
+  Beer (2003). The categorization is a property of the whole BBE system — the
+  agent actively moves to perceive before it commits.
+
+lead: |
+  This is the iconic minimal-cognition model. A circle and a diamond are only
+  distinguishable through how their silhouettes sweep across the agent's sensor
+  fan as they fall; the agent must move to gather that information and then act
+  differently on the two categories. There is no symbol for "circle" anywhere in
+  the network — the category lives in the coupled dynamics.
+
+executive:
+  what_is_this: |
+    An evolved CTRNN agent (5 neurons, 7 ray sensors, a two-motor horizontal
+    effector) built on the shared brain, body and environment processes, tasked
+    with catching falling circles and avoiding falling diamonds. The genome was
+    evolved by the workspace's own genetic algorithm and is committed; the studies
+    replay it deterministically.
+  verdict: |
+    Reproduced. The evolved agent catches circles (mean final distance 0.15,
+    caught at every trained offset) and avoids diamonds (mean final distance 29.6)
+    — a clean categorical separation — within its trained offset range (±6). It
+    fails to avoid diamonds at the extreme untrained offset (±7–8), an honest
+    generalization boundary.
+  verdict_status: passed
+  verdict_detail: |
+    From the committed seed (pop 80, gen 100, seed 0), verified in the test suite:
+    circles caught at all five training offsets; diamonds fled to ~25–40 units
+    across −8..+6; category distance gap > 8. The agent reproduces Beer's active
+    categorical perception. Two corrections were needed to make the task
+    well-posed: objects must be large enough to cast distinguishable sensor
+    shadows (size-1 circle and diamond are identical to the sensors), and the
+    fitness must be continuous (a plateaued reward traps evolution in a flee-both
+    strategy).
+  decisions_needed:
+    - question: "Report the ±7–8 avoid-generalization failure as a boundary finding, or re-evolve with wider training offsets?"
+      context: "Diamonds at offset ≥7 (beyond the ±6 training range) are caught, not avoided. Current framing reports it honestly as a generalization edge."
+
+scientific_argument:
+  main_claim: |
+    Shape categorization in this agent is an emergent property of brain–body–
+    environment dynamics: the same sensorimotor loop yields opposite behaviours
+    for circles and diamonds, with no internal category representation.
+  evidence_for:
+    - "Circles caught at all trained offsets (mean final distance 0.15 ≤ catch radius 1.5)."
+    - "Diamonds avoided across −8..+6 (final distance 25–40 ≫ catch radius)."
+    - "Trajectories share an early 'active perception' phase, then diverge by category (figures/trajectories.png)."
+    - "Neuron-output and motor-neuron phase trajectories separate by category (figures/decision_dynamics.png)."
+  evidence_against:
+    - "At offset ≥7 (untrained) diamonds are caught, not avoided — categorization does not generalize to the sensor-fan edge."
+  key_figures:
+    - "figures/trajectories.png — agent tracks circles, flees diamonds, at five offsets each"
+    - "figures/categorization_map.png — final distance vs offset, circle vs diamond (the categorization plot)"
+    - "figures/decision_dynamics.png — neuron outputs + motor-neuron phase trajectory, catch vs avoid"
+  caveats:
+    - "Objects sized 3.0 so circle and diamond are sensorially distinguishable (size 1 is not)."
+    - "A single evolved genome; not a population of solutions. The behaviour is the strategy this seed found."
+
+biological_story: |
+  Beer's agent is the simplest creature that can be said to perceive a category.
+  It lives on a line and looks upward through seven narrow rays. A circle and a
+  diamond falling toward it are, at any instant, just a pattern of seven distances
+  — and those patterns are nearly identical until the object is close and the
+  agent has moved to bring it across several rays. So the agent must act to
+  perceive: the early part of every trial, for both shapes, looks the same, a
+  small exploratory sweep. Only once the silhouette has been resolved does the
+  coupled system commit — sliding under a circle to catch it, or accelerating away
+  from a diamond. Nowhere in the five-neuron network is there a unit that means
+  "circle"; the category is a shape in the flow of the whole brain–body–environment
+  system, exactly the point of the minimal-cognition programme.
+
+at_a_glance:
+  - {study: cat-catch-and-avoid, role: "the agent catches circles and avoids diamonds from the seeded genome"}
+  - {study: cat-categorization-map, role: "behavioural categorization across object offsets + the generalization edge"}
+  - {study: cat-decision-dynamics, role: "how the coupled neural dynamics commit differently to the two categories"}
+
+glossary:
+  - {term: "Active perception", definition: "Moving in order to generate the sensory information needed to perceive; here, sweeping to resolve a silhouette."}
+  - {term: "Categorical perception", definition: "Responding to stimuli by discrete category (circle vs diamond) rather than by a continuous property."}
+  - {term: "Ray sensor", definition: "A sensor returning the distance to the first object along a fixed direction; 7 are fanned ±30° about vertical."}
+  - {term: "BBE system", definition: "Brain (CTRNN) + body (sensors/effectors) + environment (falling objects), coupled and run as one dynamical system."}
+
+studies:
+  - cat-catch-and-avoid
+  - cat-categorization-map
+  - cat-decision-dynamics
+
+expert_docs: []
+acceptance_criteria:
+  - {study: cat-catch-and-avoid, behavior: catches-circles-avoids-diamonds}
+  - {study: cat-categorization-map, behavior: category-separation-across-offsets}
+  - {study: cat-decision-dynamics, behavior: neural-trajectories-separate-by-category}
+
+competing_frameworks:
+  - {name: "Representationalist / computational view", relation: "contrasts-with — here no internal shape symbol is computed; the category is in the coupled dynamics"}
+
+narrative_spine_skip: []
