@@ -33,6 +33,20 @@ def test_forage_animation_renders(tmp_path):
     assert p.exists() and p.stat().st_size > 1000
 
 
+def test_multi_env_animation_renders(tmp_path):
+    from viva_bbe_systems.forager_anim import animate_multi
+    p = animate_multi(_agent(), TRIAL_CONFIGS[:6], tmp_path / "multi.gif",
+                      max_steps=150, n_frames=10)
+    assert p.exists() and p.stat().st_size > 1000
+
+
+def test_neural_activity_animation_renders(tmp_path):
+    from viva_bbe_systems.forager_anim import animate_neural
+    p = animate_neural(_agent(), TRIAL_CONFIGS[0], tmp_path / "neural.gif",
+                       max_steps=150, n_frames=10)
+    assert p.exists() and p.stat().st_size > 1000
+
+
 def test_evolution_viz_renders(tmp_path):
     from viva_bbe_systems.forager_evo_viz import anim_evolution
     from viva_bbe_systems.tasks.evolve_forager import load_checkpoints

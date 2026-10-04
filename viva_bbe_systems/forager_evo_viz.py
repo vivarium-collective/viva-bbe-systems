@@ -44,10 +44,8 @@ def _behaviour(genome):
     agent = _agent(genome)
     both, survs = 0, []
     for c in TRIAL_CONFIGS:
-        env = ChemotaxisEnv(Resource(center=np.array(c["resource_a"], float), signal="A"),
-                            Resource(center=np.array(c["resource_b"], float), signal="B"))
-        r = agent.run_trial(env, c["init_levels"], start_pos=c["start_pos"],
-                            start_angle=c["start_angle"], max_steps=MAX_STEPS)
+        from .tasks.forager_fitness import run_config
+        r = run_config(agent, c, max_steps=MAX_STEPS)
         lh = r["levels_hist"]
         if float(np.diff(lh[:, 0]).max()) > 0 and float(np.diff(lh[:, 1]).max()) > 0:
             both += 1
@@ -57,10 +55,8 @@ def _behaviour(genome):
 
 def _trajectory(genome, config):
     agent = _agent(genome)
-    env = ChemotaxisEnv(Resource(center=np.array(config["resource_a"], float), signal="A"),
-                        Resource(center=np.array(config["resource_b"], float), signal="B"))
-    return agent.run_trial(env, config["init_levels"], start_pos=config["start_pos"],
-                           start_angle=config["start_angle"], max_steps=MAX_STEPS)["path"]
+    from .tasks.forager_fitness import run_config
+    return run_config(agent, config, max_steps=MAX_STEPS)["path"]
 
 
 def fig_evolution_curves(ck):
@@ -91,8 +87,8 @@ def anim_evolution(ck, out_path, config=None):
     trajs = [_trajectory(g, config) for g in genomes]
     a = np.array(config["resource_a"], float); b = np.array(config["resource_b"], float)
     fig, ax = plt.subplots(figsize=(5.4, 5.4))
-    ax.add_patch(plt.Circle(a, 7, fc=A_COLOR, ec="k", alpha=0.85))
-    ax.add_patch(plt.Circle(b, 7, fc=B_COLOR, ec="k", alpha=0.85))
+    ax.add_patch(plt.Circle(a, config.get("radius_a", 7.0), fc=A_COLOR, ec="k", alpha=0.85))
+    ax.add_patch(plt.Circle(b, config.get("radius_b", 7.0), fc=B_COLOR, ec="k", alpha=0.85))
     ax.set_xlim(0, 100); ax.set_ylim(0, 100); ax.set_aspect("equal")
     ax.set_xlabel("x"); ax.set_ylabel("y")
     line, = ax.plot([], [], color="0.3", lw=1.0)

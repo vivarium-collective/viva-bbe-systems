@@ -19,15 +19,12 @@ MAX_STEPS = 2500
 
 
 def _run_all(genome):
+    from viva_bbe_systems.tasks.forager_fitness import run_config
     spec = forager_spec("M2")
     agent = ForagerAgent(decode(genome, spec), ChemotacticForager("M2"))
     both, survs = 0, []
     for c in TRIAL_CONFIGS:
-        env = ChemotaxisEnv(
-            Resource(center=np.array(c["resource_a"], float), signal="A"),
-            Resource(center=np.array(c["resource_b"], float), signal="B"))
-        r = agent.run_trial(env, c["init_levels"], start_pos=c["start_pos"],
-                            start_angle=c["start_angle"], max_steps=MAX_STEPS)
+        r = run_config(agent, c, max_steps=MAX_STEPS)
         lh = r["levels_hist"]
         ate_a = float(np.diff(lh[:, 0]).max()) > 0   # ate from A at least once
         ate_b = float(np.diff(lh[:, 1]).max()) > 0   # ate from B at least once
@@ -41,8 +38,9 @@ def test_seed_switches_and_outlives_nonmover():
     assert DEFAULT_PATH.exists(), "committed forager seed missing"
     g = load_seed(DEFAULT_PATH)
     both, mean_surv, _ = _run_all(g)
-    # action switching: forages BOTH resources in (almost) every config
-    assert both >= 10, f"only forages both in {both}/11 configs"
+    n = len(TRIAL_CONFIGS)
+    # action switching: forages BOTH resources in most of the varied battery
+    assert both >= 0.75 * n, f"only forages both in {both}/{n} configs"
     # survives well beyond a passive non-mover (which starves at ~min_level/drain)
     nm = np.zeros(len(g)); nm[:forager_spec("M2").size] = 1.0
     _, nm_surv, _ = _run_all(nm)

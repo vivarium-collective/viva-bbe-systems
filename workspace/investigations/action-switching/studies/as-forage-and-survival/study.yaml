@@ -8,20 +8,19 @@ question: 'Does the evolved forager keep both nutrients alive by visiting both r
   survive longer than a passive agent?
 
   '
-claim: 'The agent forages both resources in all 11 configs and survives 1769 steps on average vs 758 for
-  a non-mover (2.3x).
+claim: 'The agent forages both resources in 15 of 16 varied environments (varied positions + sizes) and survives ~1351 steps on average vs 758 for a non-mover.
 
   '
 expected_behavior:
 - name: forages-both-and-outlives-nonmover
   observable: forages-both + mean-survival
-  condition: committed M2 seed, 11 configs, max_steps 2500
-  rationale: 'Forages both resources (eats from each) in >=10/11 configs; mean survival > 1.5x a non-mover.
+  condition: committed M2 seed, 16 varied environments, max_steps 2000
+  rationale: 'Forages both resources (eats from each) in >=75% of the 16 varied environments (achieved 15/16); mean survival > 1.5x a non-mover.
     Verified in tests/test_forager_seed.py.
 
     '
 findings:
-- summary: Forages both in 11/11; mean survival 1769 vs non-mover 758.
+- summary: Forages both in 15/16 varied environments; mean survival ~1351 vs non-mover 758.
   detail: 'figures/forage.gif shows the agent shuttling between resources while both nutrient bars are
     sustained; figures/trajectory_nutrients.png shows the spatial loop + nutrient time series.
 
@@ -31,6 +30,11 @@ visualizations:
   chart: ../../figures/forage.gif
   config:
     caption: Video — the agent shuttling between the two resources, with live nutrient bars.
+- name: many environments
+  chart: ../../figures/forage_multi.gif
+  config:
+    caption: 'Video — one agent foraging across six different environments (varied resource positions
+      + sizes): a general navigation strategy.'
 - name: trajectory and nutrients
   chart: ../../figures/trajectory_nutrients.png
   config:
@@ -38,7 +42,7 @@ visualizations:
 - name: evolution
   chart: ../../figures/evolution_curves.png
   config:
-    caption: Switching behaviour emerging over evolution (foraging-both reaches 11/11 by gen 20).
+    caption: Switching behaviour emerging over evolution (share foraging both climbs over evolution).
 - name: evolution progress
   chart: ../../figures/evolution_progress.gif
   config:

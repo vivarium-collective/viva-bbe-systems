@@ -36,12 +36,12 @@ def _default_outdir() -> Path:
 
 
 def _run(agent, config, max_steps=2500):
-    a = np.array(config["resource_a"], float)
-    b = np.array(config["resource_b"], float)
-    env = ChemotaxisEnv(Resource(center=a, signal="A"), Resource(center=b, signal="B"))
-    r = agent.run_trial(env, config["init_levels"], start_pos=config["start_pos"],
-                        start_angle=config["start_angle"], max_steps=max_steps)
-    r["res_a"], r["res_b"] = a, b
+    from .tasks.forager_fitness import run_config
+    r = run_config(agent, config, max_steps=max_steps)
+    r["res_a"] = np.array(config["resource_a"], float)
+    r["res_b"] = np.array(config["resource_b"], float)
+    r["rad_a"] = float(config.get("radius_a", 7.0))
+    r["rad_b"] = float(config.get("radius_b", 7.0))
     return r
 
 
@@ -51,8 +51,8 @@ def fig_trajectory_and_nutrients(agent, config):
     t = np.arange(len(path))
     fig, (axp, axn) = plt.subplots(1, 2, figsize=(11, 4.6))
     # spatial path
-    axp.add_patch(plt.Circle(r["res_a"], 7, fc=A_COLOR, ec="k", alpha=0.85))
-    axp.add_patch(plt.Circle(r["res_b"], 7, fc=B_COLOR, ec="k", alpha=0.85))
+    axp.add_patch(plt.Circle(r["res_a"], r["rad_a"], fc=A_COLOR, ec="k", alpha=0.85))
+    axp.add_patch(plt.Circle(r["res_b"], r["rad_b"], fc=B_COLOR, ec="k", alpha=0.85))
     axp.plot(path[:, 0], path[:, 1], color="0.3", lw=1.0)
     axp.plot(*path[0], "ko", ms=6)
     axp.set_xlim(0, 100); axp.set_ylim(0, 100); axp.set_aspect("equal")
@@ -89,9 +89,9 @@ def fig_action_switching(agent, config):
     t = np.arange(len(path))
     da = np.linalg.norm(path - r["res_a"], axis=1)
     db = np.linalg.norm(path - r["res_b"], axis=1)
-    # "engaged with X" when within the resource radius (7)
-    eng_a = da <= 7.0
-    eng_b = db <= 7.0
+    # "engaged with X" when within that resource's radius
+    eng_a = da <= r["rad_a"]
+    eng_b = db <= r["rad_b"]
     fig, (axd, axn) = plt.subplots(2, 1, figsize=(9, 6), sharex=True)
     axd.plot(t, da, color=A_COLOR, label="distance to A")
     axd.plot(t, db, color=B_COLOR, label="distance to B")

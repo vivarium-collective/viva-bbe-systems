@@ -22,8 +22,8 @@ def forager_bounds(morphology="M2"):
     return _bounds_arrays(forager_spec(morphology))
 
 
-def evolve_forager(*, morphology="M2", pop_size=80, generations=100, seed=0,
-                   mutation_sd=0.5, record_every=None, max_steps=2500, balance_weight=0.6) -> dict:
+def evolve_forager(*, morphology="M2", pop_size=70, generations=90, seed=0,
+                   mutation_sd=0.5, record_every=None, max_steps=2000, balance_weight=0.6) -> dict:
     spec = forager_spec(morphology)
     lo, hi = forager_bounds(morphology)
     kw = {"balance_weight": balance_weight}
@@ -64,17 +64,13 @@ def per_config_report(genome, morphology="M2", max_steps=5000):
     """Per-config survival and whether both resources were visited (level rises)."""
     from ..agents.forager_agent import ForagerAgent
     from ..bodies.chemotactic_forager import ChemotacticForager
-    from ..environments.chemotaxis_resources import ChemotaxisEnv, Resource
     from ..genome import decode
-    from .forager_fitness import TRIAL_CONFIGS
+    from .forager_fitness import TRIAL_CONFIGS, run_config
     net_spec = forager_spec(morphology)
     out = []
     for c in TRIAL_CONFIGS:
         agent = ForagerAgent(decode(genome, net_spec), ChemotacticForager(morphology))
-        env = ChemotaxisEnv(Resource(center=np.array(c["resource_a"], float), signal="A"),
-                            Resource(center=np.array(c["resource_b"], float), signal="B"))
-        r = agent.run_trial(env, c["init_levels"], start_pos=c["start_pos"],
-                            start_angle=c["start_angle"], max_steps=max_steps)
+        r = run_config(agent, c, max_steps=max_steps)
         rises = np.diff(r["levels_hist"], axis=0) > 1e-9 if len(r["levels_hist"]) > 1 \
             else np.zeros((0, 2), bool)
         out.append({"survival": int(r["survival"]),

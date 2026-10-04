@@ -15,10 +15,15 @@ def _genome(tau=1.0):
     return g
 
 
-def test_eleven_configs():
-    assert len(TRIAL_CONFIGS) == 11
+def test_config_battery_varied():
+    # a deterministic battery of varied environments (positions AND sizes)
+    assert len(TRIAL_CONFIGS) == 16
+    radii = set()
     for c in TRIAL_CONFIGS:
-        assert set(c) == {"resource_a", "resource_b", "start_pos", "start_angle", "init_levels"}
+        assert set(c) == {"resource_a", "resource_b", "start_pos", "start_angle",
+                          "init_levels", "radius_a", "radius_b"}
+        radii.add(round(c["radius_a"], 2)); radii.add(round(c["radius_b"], 2))
+    assert len(radii) > 10  # resource sizes genuinely vary across the battery
 
 
 def test_finite_bounded_deterministic():

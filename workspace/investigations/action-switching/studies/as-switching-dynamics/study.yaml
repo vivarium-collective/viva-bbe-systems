@@ -33,6 +33,11 @@ visualizations:
   config:
     caption: Anti-phase distance-to-resource traces (shaded = engaged) + sawtooth nutrient levels — the
       switching signature (cf. Beer Fig. 12).
+- name: neural activity
+  chart: ../../figures/neural_activity.gif
+  config:
+    caption: 'Video — the CTRNN''s activation pattern during switching: node-ring graph (neuron outputs
+      + weights) + a time raster; the chemosensor neurons alternate anti-phase.'
 - name: internal-state phase
   chart: ../../figures/nutrient_phase.png
   config:

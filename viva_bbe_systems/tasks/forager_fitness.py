@@ -12,31 +12,58 @@ from viva_bbe_systems.environments.chemotaxis_resources import ChemotaxisEnv, Re
 from viva_bbe_systems.genome import decode
 
 
-def _cfg(a, b, pos, angle, levels):
-    return {"resource_a": a, "resource_b": b, "start_pos": pos,
-            "start_angle": angle, "init_levels": levels}
+def _cfg(a, b, pos, angle, levels, ra=7.0, rb=7.0):
+    return {"resource_a": tuple(map(float, a)), "resource_b": tuple(map(float, b)),
+            "start_pos": tuple(map(float, pos)), "start_angle": float(angle),
+            "init_levels": tuple(map(float, levels)),
+            "radius_a": float(ra), "radius_b": float(rb)}
 
 
-# Hard-coded (deterministic): varied separations, starts, angles, and hunger.
-# 11 scenarios where foraging BOTH resources is physically reachable (the paper's
-# intent). Separations are moderate (~25-35 units) so an agent can shuttle between
-# the two within a nutrient's lifetime, and the start is near the midpoint; varied
-# orientations and initial hunger force the agent to switch toward whichever
-# nutrient is low. (Earlier configs had sep 70-113, > one nutrient-lifetime of
-# travel, so switching was near-impossible and the GA got no gradient for it.)
-TRIAL_CONFIGS = [
-    _cfg((35, 50), (65, 50), (50, 50), 0.0, (5.0, 5.0)),         # horizontal, balanced
-    _cfg((40, 40), (60, 60), (50, 50), 0.8, (3.0, 5.0)),         # diagonal, hungry A
-    _cfg((40, 60), (60, 40), (50, 50), 2.3, (5.0, 3.0)),         # anti-diagonal, hungry B
-    _cfg((32, 50), (62, 50), (45, 50), 0.0, (4.0, 4.0)),         # horizontal, offset start
-    _cfg((50, 35), (50, 65), (50, 50), 1.5, (2.5, 5.0)),         # vertical, hungry A
-    _cfg((44, 44), (70, 60), (55, 50), 3.0, (5.0, 2.5)),         # tilted, hungry B
-    _cfg((38, 62), (62, 38), (50, 50), 5.5, (4.0, 3.0)),         # anti-diagonal, turned
-    _cfg((60, 42), (35, 42), (48, 46), 3.9, (3.0, 3.0)),         # horizontal, facing away
-    _cfg((40, 40), (64, 64), (52, 52), 1.0, (5.0, 4.0)),         # diagonal, mild hunger B
-    _cfg((50, 38), (50, 68), (50, 52), 0.3, (3.5, 5.0)),         # vertical, hungry A
-    _cfg((38, 58), (62, 42), (50, 50), 2.0, (4.5, 2.0)),         # diagonal, very hungry B
-]
+def _make_configs(n=16, seed=7):
+    """A deterministic battery of varied environments: the two resources differ
+    in POSITION and SIZE (radius) across trials, so an agent must evolve a
+    general navigation/switching strategy rather than overfit a fixed layout.
+
+    Separations stay reachable (~22-42 units, < one nutrient-lifetime of travel)
+    with the start near the midpoint and varied orientation + initial hunger.
+    Fixed-seed RNG → the same battery every run.
+    """
+    rng = np.random.default_rng(seed)
+    cfgs = []
+    for _ in range(n):
+        ra, rb = float(rng.uniform(4.0, 12.0)), float(rng.uniform(4.0, 12.0))
+        margin = max(ra, rb) + 3.0
+        a = rng.uniform(margin, 100.0 - margin, 2)
+        sep = rng.uniform(22.0, 42.0)
+        theta = rng.uniform(0.0, 2.0 * np.pi)
+        b = np.clip(a + sep * np.array([np.cos(theta), np.sin(theta)]),
+                    margin, 100.0 - margin)
+        start = np.clip((a + b) / 2.0 + rng.uniform(-8.0, 8.0, 2), 2.0, 98.0)
+        angle = float(rng.uniform(0.0, 2.0 * np.pi))
+        levels = (float(rng.uniform(2.0, 5.0)), float(rng.uniform(2.0, 5.0)))
+        cfgs.append(_cfg(a, b, start, angle, levels, ra, rb))
+    return cfgs
+
+
+TRIAL_CONFIGS = _make_configs()
+
+
+def env_from_config(c) -> ChemotaxisEnv:
+    """Build the two-resource chemotaxis env for a config (honours per-resource
+    radius; defaults to 7.0 for legacy configs without a radius)."""
+    return ChemotaxisEnv(
+        Resource(center=np.array(c["resource_a"], float),
+                 radius=float(c.get("radius_a", 7.0)), signal="A"),
+        Resource(center=np.array(c["resource_b"], float),
+                 radius=float(c.get("radius_b", 7.0)), signal="B"))
+
+
+def run_config(agent, c, *, max_steps=2500, record=False) -> dict:
+    """Run `agent` on one config's environment (the single source of the env +
+    run_trial call, shared by the fitness, the studies' viz, and the tests)."""
+    return agent.run_trial(env_from_config(c), c["init_levels"],
+                           start_pos=c["start_pos"], start_angle=c["start_angle"],
+                           max_steps=max_steps, record=record)
 
 
 def longevity_fitness(genome, spec, morphology="M2", *, max_steps=5000,
@@ -58,13 +85,9 @@ def longevity_fitness(genome, spec, morphology="M2", *, max_steps=5000,
     agent = ForagerAgent(net, ChemotacticForager(morphology))
     total = 0.0
     for c in TRIAL_CONFIGS:
-        env = ChemotaxisEnv(
-            Resource(center=np.array(c["resource_a"], float), signal="A"),
-            Resource(center=np.array(c["resource_b"], float), signal="B"))
         try:
             with np.errstate(over="raise", invalid="raise", divide="raise"):
-                r = agent.run_trial(env, c["init_levels"], start_pos=c["start_pos"],
-                                    start_angle=c["start_angle"], max_steps=max_steps)
+                r = run_config(agent, c, max_steps=max_steps)
             score = r["survival"] / max_steps
             if balance_weight:
                 lh = r["levels_hist"]  # (T, 2)
