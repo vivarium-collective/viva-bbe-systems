@@ -22,11 +22,13 @@ def forager_bounds(morphology="M2"):
     return _bounds_arrays(forager_spec(morphology))
 
 
-def evolve_forager(*, morphology="M2", pop_size=80, generations=120, seed=0,
-                   mutation_sd=0.5, record_every=None, max_steps=None) -> dict:
+def evolve_forager(*, morphology="M2", pop_size=80, generations=100, seed=0,
+                   mutation_sd=0.5, record_every=None, max_steps=2500, balance_weight=0.6) -> dict:
     spec = forager_spec(morphology)
     lo, hi = forager_bounds(morphology)
-    kw = {} if max_steps is None else {"max_steps": max_steps}
+    kw = {"balance_weight": balance_weight}
+    if max_steps is not None:
+        kw["max_steps"] = max_steps
     return evolve_flat(make_forager_fitness(spec, morphology, **kw),
                        genome_length(spec), lo, hi, pop_size=pop_size,
                        generations=generations, mutation_sd=mutation_sd,
