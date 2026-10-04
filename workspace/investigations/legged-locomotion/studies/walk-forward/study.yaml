@@ -20,7 +20,7 @@ expected_behavior:
     and the body never goes backward (min x ≈ start). Verified in
     tests/test_walker_seed.py.
 findings:
-- summary: Walks ~450 units in 500 steps with 25 steps; monotone forward; a pure-distance fitness instead evolves a single ~21-unit lunge.
+- summary: Walks ~450 units in 500 steps with 25 steps; net strictly forward (sub-0.3-unit coasting jitter only); a pure-distance fitness instead evolves a single ~21-unit lunge.
   detail: |
     figures/walk.gif shows the leg planting and swinging as the body advances
     across the ground; figures/gait_diagram.png shows the stance/swing bands and

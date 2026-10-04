@@ -9,7 +9,8 @@ faithful default.
 import numpy as np
 
 from viva_bbe_systems.tasks.evolve_walker import (
-    DEFAULT_PATH, load_seed, walker_spec, per_trial_report, gait_metrics)
+    DEFAULT_PATH, CHECKPOINT_PATH, load_seed, load_checkpoints,
+    walker_spec, per_trial_report, gait_metrics)
 from viva_bbe_systems.agents.walker_agent import make_walker
 from viva_bbe_systems.genome import decode
 
@@ -48,3 +49,9 @@ def test_seed_has_rhythmic_gait():
 def test_seed_is_deterministic():
     g = load_seed()
     assert per_trial_report(g)["distance"] == per_trial_report(g)["distance"]
+
+
+def test_seed_matches_final_checkpoint():
+    # the evolution-progress viz and the committed seed must stay in sync:
+    # the last checkpoint genome IS the committed best genome.
+    assert np.array_equal(load_checkpoints(CHECKPOINT_PATH)["genomes"][-1], load_seed())

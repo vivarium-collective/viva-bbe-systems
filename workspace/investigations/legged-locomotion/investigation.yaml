@@ -39,7 +39,8 @@ executive:
     Reproduced. The evolved CTRNN is a genuine central pattern generator: it
     walks forward ~450 units over a 500-step trial with a REGULAR gait — 25
     strides of period 19.8 ± 0.4 steps, duty factor 0.44 — and its state traces
-    a clean limit cycle. It never reverses. This is rhythmic locomotion from a
+    a clean limit cycle. It never reverses at stride scale (only sub-0.3-unit
+    coasting jitter; net strictly forward). This is rhythmic locomotion from a
     small neural dynamical system, exactly the Beer & Gallagher result.
   verdict_status: passed
   verdict_detail: |
@@ -64,7 +65,7 @@ scientific_argument:
     limit cycle whose period and phase organize a stance/swing gait — a central
     pattern generator, with no clock or scripted step sequence.
   evidence_for:
-    - "Walks forward ~450 units over 500 steps and never reverses (figures/walk.gif, test_walker_seed.py)."
+    - "Walks forward ~450 units over 500 steps, net strictly forward (no stride-scale reversal; figures/walk.gif, test_walker_seed.py)."
     - "A regular gait: 25 strides of period 19.8 ± 0.4 steps, duty factor 0.44 (figures/gait_diagram.png)."
     - "The CTRNN state traces a closed limit cycle — the CPG attractor (figures/cpg_limit_cycle.png)."
     - "The rhythm emerges over evolution (figures/evolution_curves.png): distance and regularity climb across generations."

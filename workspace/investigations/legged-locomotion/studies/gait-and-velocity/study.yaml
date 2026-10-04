@@ -10,7 +10,7 @@ question: |
 claim: |
   A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the
   period), duty factor 0.44 (stance and swing nearly balanced), mean body
-  velocity ~9.0 units/step.
+  velocity ~9.0 units/time (~0.9 units/step).
 expected_behavior:
 - name: regular-stride-and-duty
   observable: stride period + duty factor + mean velocity
