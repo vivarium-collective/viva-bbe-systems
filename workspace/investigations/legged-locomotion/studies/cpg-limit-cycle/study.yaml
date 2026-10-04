@@ -1,0 +1,54 @@
+schema_version: 3
+name: cpg-limit-cycle
+investigation: legged-locomotion
+title: The CPG's Limit Cycle
+status: ran
+confidence: Accepted
+question: |
+  Is the walking rhythm a dynamical attractor of the CTRNN — does the network's
+  state trace a stable closed loop (a limit cycle), the signature of a central
+  pattern generator?
+claim: |
+  The evolved CTRNN's state traces a clean closed loop in its activity space — a
+  limit cycle — repeating once per stride (~19.8 steps). The rhythm is a
+  self-sustaining attractor, not a clocked or scripted sequence.
+expected_behavior:
+- name: ctrnn-state-traces-limit-cycle
+  observable: closed-loop trajectory in CTRNN output space
+  condition: committed walker seed, 500 steps, dt 0.1, record outputs
+  rationale: |
+    Projected onto two neurons, the recorded CTRNN output trajectory settles
+    onto a closed loop that repeats at the stride period — a limit cycle. The
+    neuron-output raster shows the same regular periodicity.
+findings:
+- summary: The CTRNN state settles onto a closed limit cycle repeating once per stride — the CPG attractor.
+  detail: |
+    figures/cpg_limit_cycle.png shows the phase portrait (a closed loop);
+    figures/neural_activity.gif shows the node-ring activations and the regular
+    time raster driving the leg.
+visualizations:
+- name: CPG limit cycle
+  chart: ../../figures/cpg_limit_cycle.png
+  config:
+    caption: Phase portrait of the CTRNN state — the closed loop is the central pattern generator's attractor.
+- name: neural activity
+  chart: ../../figures/neural_activity.gif
+  config:
+    caption: Video — the CTRNN node-ring graph (neuron outputs + weights) and a time raster, showing the CPG's rhythm.
+- name: walk
+  chart: ../../figures/walk.gif
+  config:
+    caption: The same rhythm, embodied — the leg stepping the body forward.
+baseline:
+- name: walker-cpg
+  process: CTRNNProcess
+  params:
+    size: 5
+    motor_indices:
+    - 2
+    - 3
+    - 4
+    angle_input_index: 0
+variants: []
+interventions: []
+runs: []

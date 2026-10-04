@@ -1,0 +1,57 @@
+schema_version: 3
+name: walk-forward
+investigation: legged-locomotion
+title: The Walker Walks Forward
+status: ran
+confidence: Accepted
+question: |
+  Does the evolved CTRNN drive the leg so the body travels steadily forward,
+  with a repeating step cycle rather than a single lunge?
+claim: |
+  The evolved walker travels ~450 units over a 500-step trial and never
+  reverses, taking 25 regular steps — a sustained forward walk, not a one-off
+  lunge (which a pure-distance fitness produces, reaching only ~21).
+expected_behavior:
+- name: walks-forward-rhythmically
+  observable: distance + foot-cycle count + monotone progress
+  condition: committed walker seed, 500 steps, dt 0.1
+  rationale: |
+    Distance > 200 (achieved 450.7), ≥ 10 foot plant/lift cycles (achieved 25),
+    and the body never goes backward (min x ≈ start). Verified in
+    tests/test_walker_seed.py.
+findings:
+- summary: Walks ~450 units in 500 steps with 25 steps; monotone forward; a pure-distance fitness instead evolves a single ~21-unit lunge.
+  detail: |
+    figures/walk.gif shows the leg planting and swinging as the body advances
+    across the ground; figures/gait_diagram.png shows the stance/swing bands and
+    the steadily rising body position/velocity.
+visualizations:
+- name: walk
+  chart: ../../figures/walk.gif
+  config:
+    caption: Video — side view of the leg planting (filled foot) and swinging (open foot) as the body walks forward.
+- name: gait diagram
+  chart: ../../figures/gait_diagram.png
+  config:
+    caption: Stance/swing bands, leg angle, and body velocity over time — the repeating step cycle.
+- name: evolution
+  chart: ../../figures/evolution_curves.png
+  config:
+    caption: Distance and gait regularity climbing over evolution.
+- name: evolution progress
+  chart: ../../figures/evolution_progress.gif
+  config:
+    caption: The gait improving across generations — from no rhythm to clean stepping.
+baseline:
+- name: walker-cpg
+  process: CTRNNProcess
+  params:
+    size: 5
+    motor_indices:
+    - 2
+    - 3
+    - 4
+    angle_input_index: 0
+variants: []
+interventions: []
+runs: []

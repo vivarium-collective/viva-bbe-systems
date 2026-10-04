@@ -1,0 +1,124 @@
+# legged-locomotion/investigation.yaml — schema v2
+schema_version: 2
+name: legged-locomotion
+title: "Legged Locomotion — a CTRNN Central Pattern Generator (Beer & Gallagher 1992)"
+created: '2026-10-04'
+status: running
+
+question: |
+  Can a small continuous-time recurrent neural network, coupled to a single
+  leg over flat ground, evolve into a central pattern generator that produces
+  a rhythmic walking gait — a self-sustaining stance/swing cycle that carries
+  the body steadily forward — rather than a one-off lunge?
+
+hypothesis: |
+  A CTRNN evolved to maximize forward travel, with its leg angle fed back as
+  proprioception, will settle into a stable limit cycle: it plants the foot and
+  swings the leg backward to drive the body forward (stance), lifts and swings
+  forward to recover (swing), and repeats. The rhythm is a dynamical attractor
+  of the coupled brain-body system, not a scripted sequence — the signature of
+  a central pattern generator.
+
+lead: |
+  This is the rhythmic-behaviour brain-body-environment model. Unlike the
+  chemotaxis and discrimination agents, which react to an external stimulus,
+  the walker must GENERATE its own temporal structure: a periodic motor pattern
+  that persists. The scientific payoff is the CPG limit cycle — a closed loop in
+  the network's state space — and the gait it produces (stride period, duty
+  factor, velocity), read directly off the coupled dynamics.
+
+executive:
+  what_is_this: |
+    An evolved 5-neuron CTRNN (one neuron receives the leg-angle proprioceptive
+    input; three motor neurons drive foot up/down, backward-swing and
+    forward-swing) driving a single clean-room leg over flat ground. When the
+    planted foot swings backward the body translates forward; when the foot
+    lifts the leg swings freely to recover. The genome was evolved by the
+    workspace's own GA and committed; the studies replay it deterministically.
+  verdict: |
+    Reproduced. The evolved CTRNN is a genuine central pattern generator: it
+    walks forward ~450 units over a 500-step trial with a REGULAR gait — 25
+    strides of period 19.8 ± 0.4 steps, duty factor 0.44 — and its state traces
+    a clean limit cycle. It never reverses. This is rhythmic locomotion from a
+    small neural dynamical system, exactly the Beer & Gallagher result.
+  verdict_status: passed
+  verdict_detail: |
+    From the committed seed (CTRNN size 5, pop 80, gen 120, seed 0), verified in
+    the test suite: distance > 200 (achieved 450.7), ≥ 10 foot cycles (achieved
+    25), duty factor in the walking band (achieved 0.44), and a regular stride
+    period (19.8 ± 0.4 steps). Honest scope + tuning: a pure net-distance
+    fitness evolves a DEGENERATE single lunge (one plant, then coast — distance
+    ~21, no stride cycle). An opt-in rhythm-shaped fitness — distance scaled by
+    the number of PRODUCTIVE strides (stance phases that actually advance the
+    body, so marching in place earns nothing) — was needed to evolve a true
+    rhythmic gait. Pure distance remains the faithful default; the shaping is the
+    documented choice that makes a walk learnable.
+  decisions_needed:
+    - question: "Report the single evolved walker (as the paper analyzes one CPG), or sweep leg geometry / omega-gain to map the gaits that evolve?"
+      context: "Beer & Gallagher analyze one evolved walker's dynamics in depth. A geometry sweep is a documented extension."
+
+scientific_argument:
+  main_claim: |
+    Rhythmic walking here is a dynamical property of the coupled brain-body
+    system: a small CTRNN, with proprioceptive feedback, settles into a stable
+    limit cycle whose period and phase organize a stance/swing gait — a central
+    pattern generator, with no clock or scripted step sequence.
+  evidence_for:
+    - "Walks forward ~450 units over 500 steps and never reverses (figures/walk.gif, test_walker_seed.py)."
+    - "A regular gait: 25 strides of period 19.8 ± 0.4 steps, duty factor 0.44 (figures/gait_diagram.png)."
+    - "The CTRNN state traces a closed limit cycle — the CPG attractor (figures/cpg_limit_cycle.png)."
+    - "The rhythm emerges over evolution (figures/evolution_curves.png): distance and regularity climb across generations."
+  evidence_against:
+    - "A pure net-distance fitness does NOT evolve a walk — it finds a single lunge; the rhythmic gait required a rhythm-shaped fitness (documented, opt-in)."
+  key_figures:
+    - "figures/walk.gif — the leg stepping and the body advancing (the walk in motion)"
+    - "figures/cpg_limit_cycle.png — the CTRNN state's limit cycle (the CPG attractor)"
+    - "figures/gait_diagram.png — stance/swing bands + leg angle + body velocity (stride period, duty factor)"
+    - "figures/neural_activity.gif — the CPG's firing pattern driving the leg"
+  caveats:
+    - "Fitness used an opt-in rhythm-shaping term; pure net distance is the faithful default (and evolves a lunge, not a walk)."
+    - "Clean-room leg constants (leg_length 15, angle range ±π/6, friction 0.9, dt 0.1): documented choices matching the Beer walker's structure, not fitted to data."
+    - "A single evolved walker is analyzed, as in the paper; a geometry/gain sweep is a documented extension."
+
+biological_story: |
+  Walking is not a reflex to a stimulus — it is a rhythm an animal makes for
+  itself. A leg must push against the ground to drive the body forward, then
+  lift and reach ahead to do it again, over and over, in time. Beer & Gallagher
+  asked whether the smallest kind of nervous system — a handful of
+  continuously-interacting neurons — could invent that rhythm on its own when
+  evolution rewards getting somewhere. It can. The evolved network here does not
+  step on a metronome; its neurons settle into a self-sustaining cycle, a loop in
+  their own activity that repeats about every twenty time-steps. On each loop the
+  motor neurons plant the foot and sweep the leg back — the body lurches forward —
+  then lift the foot and sweep forward to set up the next step. Read off the
+  network's state, that cycle is a closed ring: the central pattern generator's
+  attractor. The leg, the ground, and the little brain together make a walker.
+
+at_a_glance:
+  - {study: walk-forward, role: "the agent walks steadily forward (distance + monotone progress)"}
+  - {study: cpg-limit-cycle, role: "the CPG's rhythmic dynamics: the CTRNN state's limit cycle"}
+  - {study: gait-and-velocity, role: "the gait quantified: stride period, duty factor, mean velocity"}
+
+glossary:
+  - {term: "Central pattern generator (CPG)", definition: "A neural circuit that produces a rhythmic motor pattern without needing rhythmic input — here, the evolved CTRNN's self-sustaining cycle."}
+  - {term: "Limit cycle", definition: "A closed, attracting loop in a dynamical system's state space — the mathematical form of a stable rhythm."}
+  - {term: "Stance / swing", definition: "Stance: foot planted, leg driving the body forward. Swing: foot lifted, leg recovering forward for the next step."}
+  - {term: "Duty factor", definition: "The fraction of a stride the foot is on the ground (in stance). ~0.5 means stance and swing take about equal time."}
+  - {term: "Stride period", definition: "The number of time-steps between successive foot-plant onsets — the gait's cycle length."}
+  - {term: "Proprioception", definition: "The agent's sense of its own leg angle, fed back to the CTRNN so the CPG can be sensory-entrained."}
+
+studies:
+  - walk-forward
+  - cpg-limit-cycle
+  - gait-and-velocity
+
+expert_docs: []
+acceptance_criteria:
+  - {study: walk-forward, behavior: walks-forward-rhythmically}
+  - {study: cpg-limit-cycle, behavior: ctrnn-state-traces-limit-cycle}
+  - {study: gait-and-velocity, behavior: regular-stride-and-duty}
+
+competing_frameworks:
+  - {name: "Scripted / clocked motor sequence", relation: "contrasts-with — here the rhythm is a dynamical limit cycle, not a timed script"}
+
+narrative_spine_skip: []

@@ -1,0 +1,49 @@
+schema_version: 3
+name: gait-and-velocity
+investigation: legged-locomotion
+title: Gait Quantified — Stride, Duty, Velocity
+status: ran
+confidence: Accepted
+question: |
+  What gait does the evolved walker produce — how regular is its stride, how is
+  stance/swing balanced, and how fast does the body move?
+claim: |
+  A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the
+  period), duty factor 0.44 (stance and swing nearly balanced), mean body
+  velocity ~9.0 units/step.
+expected_behavior:
+- name: regular-stride-and-duty
+  observable: stride period + duty factor + mean velocity
+  condition: committed walker seed, 500 steps, dt 0.1
+  rationale: |
+    stride_period finite and regular (period std < half the mean), duty factor
+    in the walking band (0.2–0.7; achieved 0.44), positive mean velocity.
+    Computed by gait_metrics and pinned in tests/test_walker_seed.py.
+findings:
+- summary: Stride period 19.8 ± 0.4 steps, duty factor 0.44, mean velocity ~9.0 — a regular, balanced gait.
+  detail: |
+    figures/gait_diagram.png annotates the measured stride period and duty
+    factor on the stance/swing bands; figures/cpg_limit_cycle.png shows the
+    underlying regularity in the CTRNN state.
+visualizations:
+- name: gait diagram
+  chart: ../../figures/gait_diagram.png
+  config:
+    caption: Stance/swing bands + leg angle + body velocity, annotated with stride period and duty factor.
+- name: CPG limit cycle
+  chart: ../../figures/cpg_limit_cycle.png
+  config:
+    caption: The regular rhythm in the CTRNN state that sets the stride period.
+baseline:
+- name: walker-cpg
+  process: CTRNNProcess
+  params:
+    size: 5
+    motor_indices:
+    - 2
+    - 3
+    - 4
+    angle_input_index: 0
+variants: []
+interventions: []
+runs: []
