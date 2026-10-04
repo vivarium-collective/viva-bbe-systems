@@ -45,7 +45,7 @@ def longevity_fitness(genome, spec, morphology="M2", *, max_steps=5000) -> float
             Resource(center=np.array(c["resource_a"], float), signal="A"),
             Resource(center=np.array(c["resource_b"], float), signal="B"))
         try:
-            with np.errstate(all="raise"):
+            with np.errstate(over="raise", invalid="raise", divide="raise"):
                 r = agent.run_trial(env, c["init_levels"], start_pos=c["start_pos"],
                                     start_angle=c["start_angle"], max_steps=max_steps)
             surv = r["survival"]
