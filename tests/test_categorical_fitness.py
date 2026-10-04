@@ -20,3 +20,13 @@ def test_nonmover_scores_below_perfect_tracker():
     # a non-mover catches nothing and avoids nothing perfectly; bounded, finite, < max
     assert np.isfinite(score)
     assert score < 1.0
+
+
+def test_diverging_genome_scores_low_instead_of_raising():
+    spec = CatGenomeSpec()
+    g = random_cat_genome(spec, np.random.default_rng(2))
+    g[:spec.n_neurons] = 1e-9  # near-zero tau => CTRNN diverges
+    score = catch_avoid_fitness(g, spec)
+    assert np.isfinite(score)
+    assert score <= 0.1
+    assert score == catch_avoid_fitness(g, spec)

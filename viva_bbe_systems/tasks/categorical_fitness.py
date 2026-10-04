@@ -7,11 +7,16 @@ from ..bodies.categorical_genome import decode_agent, CatGenomeSpec
 def catch_avoid_fitness(genome, spec: CatGenomeSpec, *,
                         offsets=(-6.0, -3.0, 0.0, 3.0, 6.0),
                         dt=0.1, steps=200, span=12.0) -> float:
-    agent = decode_agent(genome, spec, dt=dt)
     scores = []
     for shape in ("circle", "diamond"):
         for off in offsets:
-            out = agent.run_trial(obj_offset=off, shape=shape, dt=dt, steps=steps)
+            try:
+                # decode per trial so every trial starts from a fresh network
+                agent = decode_agent(genome, spec, dt=dt)
+                out = agent.run_trial(obj_offset=off, shape=shape, dt=dt, steps=steps)
+            except FloatingPointError:
+                scores.append(0.0)  # diverged CTRNN: worst reward for either shape
+                continue
             fd = min(out["final_distance"], span)
             if shape == "circle":
                 scores.append((span - fd) / span)     # closer is better
