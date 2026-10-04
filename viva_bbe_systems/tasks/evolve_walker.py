@@ -23,12 +23,16 @@ def walker_bounds():
 
 
 def evolve_walker(*, pop_size=60, generations=80, seed=0, mutation_sd=0.5,
-                  record_every=None, steps=500) -> dict:
+                  record_every=None, steps=500, rhythm_weight=0.6) -> dict:
+    """rhythm_weight shapes toward a rhythmic gait (opt-in; see walk_fitness).
+    A pure-distance run (rhythm_weight=0) evolves a single lunge; the shaped
+    fitness rewards repeated productive strides, i.e. an actual walk."""
     spec = walker_spec()
     lo, hi = walker_bounds()
-    return evolve_flat(make_walk_fitness(spec, steps=steps), genome_length(spec),
-                       lo, hi, pop_size=pop_size, generations=generations,
-                       mutation_sd=mutation_sd, seed=seed, record_every=record_every)
+    return evolve_flat(make_walk_fitness(spec, steps=steps, rhythm_weight=rhythm_weight),
+                       genome_length(spec), lo, hi, pop_size=pop_size,
+                       generations=generations, mutation_sd=mutation_sd,
+                       seed=seed, record_every=record_every)
 
 
 def save_seed(result, path=DEFAULT_PATH) -> None:
