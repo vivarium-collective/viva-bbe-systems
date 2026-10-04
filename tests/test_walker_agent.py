@@ -49,3 +49,17 @@ def test_deterministic():
     r1, r2 = a.run_trial(steps=200), a.run_trial(steps=200)
     assert r1["distance"] == r2["distance"]
     assert np.array_equal(r1["x_hist"], r2["x_hist"])
+
+
+def test_trial_dt_syncs_ctrnn_dt():
+    a = WalkerAgent(_cpg(), LeggedBody())
+    a.run_trial(dt=0.05, steps=10)
+    assert a.ctrnn.dt == 0.05
+
+
+def test_trial_dt_overrides_constructed_ctrnn_dt():
+    def run(constructed_dt):
+        c = _cpg()
+        c.dt = constructed_dt
+        return WalkerAgent(c, LeggedBody()).run_trial(dt=0.05, steps=200)["distance"]
+    assert run(0.01) == run(0.05)

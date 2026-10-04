@@ -29,6 +29,7 @@ class WalkerAgent:
 
     def run_trial(self, *, start_angle=0.0, dt=0.1, steps=500, record=False):
         ctrnn, body = self.ctrnn, self.body
+        ctrnn.dt = dt  # trial dt is authoritative for both brain and body
         ctrnn.reset(np.zeros(ctrnn.size))
         body.reset(angle=start_angle)
 
