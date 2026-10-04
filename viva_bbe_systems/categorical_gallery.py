@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .bodies.categorical_genome import CatGenomeSpec, decode_agent
-from .environments.falling_objects import FallingObject
 from .tasks.evolve_categorical import load_seed, DEFAULT_PATH
 
 CIRCLE = "#1f77b4"

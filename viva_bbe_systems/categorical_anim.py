@@ -20,7 +20,7 @@ from matplotlib.patches import Circle as CirclePatch, Polygon
 
 from .anim import save_gif
 from .bodies.categorical_genome import CatGenomeSpec, decode_agent
-from .environments.falling_objects import FallingObject, ray_distance
+from .environments.falling_objects import ray_distance
 from .tasks.evolve_categorical import load_seed, DEFAULT_PATH
 
 CIRCLE = "#1f77b4"
