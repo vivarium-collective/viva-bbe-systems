@@ -35,3 +35,34 @@ def evolve(fitness_fn, spec: GenomeSpec, *, pop_size=50, generations=30,
 
     best = int(np.argmax(fits))
     return {"best_genome": pop[best], "best_fitness": float(fits[best]), "history": history}
+
+
+def evolve_flat(fitness_fn, length, lo, hi, *, pop_size=50, generations=30,
+                mutation_sd=0.5, seed=0, elitism=1) -> dict:
+    """Same GA as `evolve`, but with an explicit flat genome length and bounds
+    (`lo`/`hi` may be scalars or length-`length` arrays)."""
+    if not (1 <= pop_size):
+        raise ValueError("pop_size must be >= 1")
+    if not (0 <= elitism <= pop_size):
+        raise ValueError("elitism must be in [0, pop_size]")
+    lo = np.broadcast_to(np.asarray(lo, dtype=float), (length,))
+    hi = np.broadcast_to(np.asarray(hi, dtype=float), (length,))
+    rng = np.random.default_rng(seed)
+    pop = rng.uniform(lo, hi, size=(pop_size, length))
+    fits = np.array([fitness_fn(g) for g in pop])
+    history = [float(fits.max())]
+
+    for _ in range(generations):
+        order = np.argsort(fits)[::-1]
+        pop, fits = pop[order], fits[order]
+        new = [pop[i].copy() for i in range(elitism)]
+        while len(new) < pop_size:
+            parent = pop[rng.integers(0, max(1, pop_size // 2))]
+            child = np.clip(parent + rng.normal(0.0, mutation_sd, parent.shape), lo, hi)
+            new.append(child)
+        pop = np.array(new)
+        fits = np.array([fitness_fn(g) for g in pop])
+        history.append(float(fits.max()))
+
+    best = int(np.argmax(fits))
+    return {"best_genome": pop[best], "best_fitness": float(fits[best]), "history": history}
