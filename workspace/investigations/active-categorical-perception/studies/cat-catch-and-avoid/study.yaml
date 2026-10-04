@@ -59,7 +59,7 @@ figures:
 
 baseline:
   - name: categorical-agent
-    composite: viva_bbe_systems.composites.categorical-perception
+    composite: viva_bbe_systems.composites.categorical_perception
     params:
       offset: 3.0
       shape: circle
