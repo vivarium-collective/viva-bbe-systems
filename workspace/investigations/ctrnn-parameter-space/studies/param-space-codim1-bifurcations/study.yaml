@@ -71,7 +71,8 @@ findings:
 baseline:
 - name: ctrnn-bbe
   composite: viva_bbe_systems.composites.ctrnn_parameter_space
-  params: {}
+  params:
+    size: 2
 variants: []
 interventions: []
 runs: []
