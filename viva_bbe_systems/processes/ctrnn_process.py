@@ -62,3 +62,38 @@ class CTRNNProcess(Process):
             o = self.net.step(external_input=I)
         motor = o[self.motor_indices] if self.motor_indices else np.array([0.0])
         return {"motor_output": motor, "neuron_outputs": o, "neuron_states": self.net.y.copy()}
+
+
+def build_ctrnn_composite(size=5, genome=None, dt=0.1, motor_indices=None) -> dict:
+    """Composite spec dict for a bare, self-driven CTRNN (no body, no env).
+
+    One ``CTRNNProcess`` reads a zero ``sensory_input`` and writes its own
+    ``neuron_outputs``/``neuron_states`` (and ``motor_output``) back to stores --
+    the substrate for the parameter-space bifurcation/equilibria studies.
+
+    The default genome is the *default CTRNN* (tau=1, theta=0, zero weights)
+    encoded for ``size``, NOT an all-zero genome: an all-zero genome sets
+    ``tau=0``, so the CTRNN's ``-y/tau`` term divides by zero and the engine
+    raises ``FloatingPointError`` on the first step. The default net runs finite
+    with no seed dependency; studies supply a real genome via the ``genome`` arg.
+    """
+    from ..ctrnn import CTRNN
+    from ..genome import GenomeSpec, encode
+    spec = GenomeSpec(size)
+    g = np.asarray(genome, float) if genome is not None else encode(CTRNN(size), spec)
+    return {
+        "brain": {
+            "_type": "process", "address": "local:CTRNNProcess",
+            "config": {"size": size, "dt": dt, "genome": g.tolist(),
+                       "motor_indices": list(motor_indices) if motor_indices else []},
+            "interval": dt,
+            "inputs": {"sensory_input": ["sensory_input"]},
+            "outputs": {"motor_output": ["motor_output"],
+                        "neuron_outputs": ["neuron_outputs"],
+                        "neuron_states": ["neuron_states"]},
+        },
+        "sensory_input": [0.0] * size,
+        "motor_output": [0.0],
+        "neuron_outputs": [0.0] * size,
+        "neuron_states": [0.0] * size,
+    }

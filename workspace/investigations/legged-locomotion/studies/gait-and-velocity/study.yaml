@@ -35,15 +35,9 @@ visualizations:
   config:
     caption: The regular rhythm in the CTRNN state that sets the stride period.
 baseline:
-- name: walker-cpg
-  process: CTRNNProcess
-  params:
-    size: 5
-    motor_indices:
-    - 2
-    - 3
-    - 4
-    angle_input_index: 0
+- name: walker-bbe
+  composite: viva_bbe_systems.composites.walker
+  params: {}
 variants: []
 interventions: []
 runs: []

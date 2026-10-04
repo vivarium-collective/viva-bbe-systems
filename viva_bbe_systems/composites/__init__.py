@@ -10,6 +10,9 @@ from __future__ import annotations
 from viva_superpowers.composite_generator import composite_generator
 
 from ..processes.categorical_env_process import build_categorical_composite
+from ..processes.ctrnn_process import build_ctrnn_composite
+from ..processes.forager_body_process import build_forager_composite
+from ..processes.walker_body_process import build_walker_composite
 
 
 @composite_generator(
@@ -29,4 +32,47 @@ def categorical_perception(core=None, *, offset=3.0, shape="circle", **kwargs) -
     return build_categorical_composite(offset=offset, shape=shape)
 
 
-__all__ = ["categorical_perception"]
+@composite_generator(
+    name="walker",
+    description=(
+        "Beer & Gallagher 1992 legged CPG: CTRNNProcess -> WalkerBodyProcess "
+        "(one leg, flat ground), from the committed walker seed. Walks forward "
+        "with a rhythmic gait."
+    ),
+    parameters={"dt": {"type": "float", "default": 0.1}},
+)
+def walker(core=None, *, dt=0.1, **kwargs) -> dict:
+    return build_walker_composite(dt=dt)
+
+
+@composite_generator(
+    name="forager",
+    description=(
+        "Agmon & Beer 2014 action-switching forager: ChemotaxisEnv+Metabolism -> "
+        "ForagerBodyProcess -> CTRNNProcess, from the committed M2 seed. Shuttles "
+        "between two resources to keep both nutrients alive."
+    ),
+    parameters={"morphology": {"type": "string", "default": "M2"}},
+)
+def forager(core=None, *, morphology="M2", **kwargs) -> dict:
+    return build_forager_composite(morphology=morphology)
+
+
+@composite_generator(
+    name="ctrnn_parameter_space",
+    description=(
+        "A bare CTRNN (Beer 1995) exploring its own dynamics -- the substrate for "
+        "the parameter-space bifurcation/equilibria studies."
+    ),
+    parameters={"size": {"type": "integer", "default": 5}},
+)
+def ctrnn_parameter_space(core=None, *, size=5, **kwargs) -> dict:
+    return build_ctrnn_composite(size=size)
+
+
+__all__ = [
+    "categorical_perception",
+    "walker",
+    "forager",
+    "ctrnn_parameter_space",
+]

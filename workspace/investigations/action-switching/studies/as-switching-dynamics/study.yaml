@@ -47,14 +47,9 @@ visualizations:
   config:
     caption: Video — the switching behaviour in the world.
 baseline:
-- name: forager-brain
-  process: CTRNNProcess
-  params:
-    size: 9
-    center_crossing: true
-    motor_indices:
-    - 8
-    - 7
+- name: forager-bbe
+  composite: viva_bbe_systems.composites.forager
+  params: {}
 variants: []
 interventions: []
 runs: []

@@ -63,18 +63,9 @@ findings:
 
     '
 baseline:
-- name: ctrnn-brain
-  process: CTRNNProcess
-  params:
-    size: 2
-    weights:
-    - - 4.5
-      - 1.0
-    - - -1.0
-      - 4.5
-    center_crossing: true
-    motor_indices:
-    - 1
+- name: ctrnn-bbe
+  composite: viva_bbe_systems.composites.ctrnn_parameter_space
+  params: {}
 variants: []
 interventions: []
 runs: []
