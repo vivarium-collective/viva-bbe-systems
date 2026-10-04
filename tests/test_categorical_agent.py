@@ -31,3 +31,28 @@ def test_agent_passes_object_stays_finite():
     agent = _agent()
     out = agent.run_trial(obj_offset=0.0, shape="circle", steps=200)
     assert np.all(np.isfinite(out["trajectory"]))
+
+
+def _biased_agent(th3, th4):
+    agent = _agent()
+    agent.ctrnn.theta[3] = th3
+    agent.ctrnn.theta[4] = th4
+    return agent
+
+
+def test_asymmetric_motor_drive_moves_in_known_direction():
+    right = _biased_agent(6.0, -6.0).run_trial(obj_offset=3.0, shape="circle", steps=50)
+    left = _biased_agent(-6.0, 6.0).run_trial(obj_offset=3.0, shape="circle", steps=50)
+    assert right["trajectory"][-1, 0] > 1.0
+    assert left["trajectory"][-1, 0] < -1.0
+    # accumulates monotonically in the driven direction
+    assert np.all(np.diff(right["trajectory"][:, 0]) > 0)
+
+
+def test_run_trial_is_deterministic_and_resets_state():
+    # a moving agent: without reset of body.x / ctrnn state the 2nd call would differ
+    agent = _biased_agent(6.0, -6.0)
+    a = agent.run_trial(obj_offset=3.0, shape="circle", steps=50)
+    b = agent.run_trial(obj_offset=3.0, shape="circle", steps=50)
+    assert np.array_equal(a["trajectory"], b["trajectory"])
+    assert a["final_distance"] == b["final_distance"]
