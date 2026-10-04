@@ -1,0 +1,46 @@
+schema_version: 3
+name: as-morphology-comparison
+investigation: action-switching
+title: Three Morphologies' Sensing
+status: ran
+confidence: Investigating
+question: 'How do the three morphologies differ in what they can sense, and which is the agent analyzed
+  here?
+
+  '
+claim: 'The three morphologies differ in chemosensor placement and whether they have internal nutrient
+  sensors; the evolved, analyzed agent is morphology M2 (one front stalk + nutrient sensors).
+
+  '
+expected_behavior:
+- name: morphology-sensing-characterized
+  observable: sensor-layout
+  condition: 'structural: M1/M2/M3 sensor layouts'
+  rationale: 'M1 = two side stalks (±90 deg) + nutrient sensors (6 sensors); M2 = one front stalk + nutrient
+    sensors (4 sensors); M3 = two stalks, NO nutrient sensors (4 sensors). Verified by the body''s sensor_layout.
+
+    '
+findings:
+- summary: M2 (one front stalk + nutrient sensors) is the evolved, switching agent; M1/M3 shown structurally.
+  detail: 'figures/morphologies.png diagrams the three sensor layouts. M3 lacks internal nutrient sensors,
+    so it would have to internalize nutrient state to switch — evolving M1/M3 is a documented extension.
+
+    '
+visualizations:
+- name: morphologies
+  chart: ../../figures/morphologies.png
+  config:
+    caption: 'The three morphologies'' sensor layouts (Agmon & Beer Fig. 2): chemosensor stalks (red=A,
+      green=B) + nutrient sensors.'
+baseline:
+- name: forager-brain
+  process: CTRNNProcess
+  params:
+    size: 9
+    center_crossing: true
+    motor_indices:
+    - 8
+    - 7
+variants: []
+interventions: []
+runs: []

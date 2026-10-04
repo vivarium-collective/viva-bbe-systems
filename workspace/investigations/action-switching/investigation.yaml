@@ -1,0 +1,123 @@
+# action-switching/investigation.yaml — schema v2
+schema_version: 2
+name: action-switching
+title: "Action Switching in Embodied Agents (Agmon & Beer 2014)"
+created: '2026-10-04'
+status: running
+
+question: |
+  Can a single CTRNN agent with internal metabolic state autonomously switch
+  between two foraging actions — approaching two different chemical resources to
+  keep two nutrient levels alive — purely through the dynamics of its coupled
+  brain-body-environment system, with no higher-level action-selection
+  mechanism?
+
+hypothesis: |
+  An agent evolved for longevity in a world with two depleting nutrients and two
+  gradient resources will shuttle between the resources, engaging whichever one
+  replenishes the nutrient that is currently low. The switch is not a discrete
+  decision but a transition in the coupled system's state driven by the internal
+  nutrient sensors, reproducing the action switching of Agmon & Beer (2014).
+
+lead: |
+  This is the capstone brain-body-environment model and the only one with
+  internal metabolic state. The agent must do more than chemotax: it must sense
+  its own two nutrient levels, and when one runs low, disengage from the resource
+  it is currently exploiting and navigate to the other — then switch back. The
+  interest is dynamical: how a small nervous system produces two different
+  coordinated actions and autonomous transitions between them.
+
+executive:
+  what_is_this: |
+    An evolved CTRNN forager (morphology M2: one front chemosensory stalk sensing
+    both chemical signals, plus two internal nutrient sensors; two force
+    effectors) in a bounded plane with two gradient resources, built on the shared
+    CTRNN brain. It is tasked with staying alive, which requires keeping both
+    nutrient levels above zero. The genome was evolved by the workspace's own GA
+    and committed; the studies replay it deterministically.
+  verdict: |
+    Reproduced. The evolved agent autonomously switches between the two resources
+    — it forages both in all 11 trial configurations — sustaining both nutrients
+    far longer than a passive agent (mean survival 1769 vs 758 steps, 2.3x). The
+    distance-to-resource traces are anti-phase and the nutrient traces sawtooth as
+    it alternates, the signature of action switching.
+  verdict_status: passed
+  verdict_detail: |
+    From the committed seed (morphology M2, pop 80, gen 100, seed 0), verified in
+    the test suite: forages both resources in >=10/11 configs; mean survival >
+    1.5x a non-mover. Switching emerges around generation 20 and survival keeps
+    improving thereafter. Honest scope: the agent switches robustly but is not
+    immortal — both nutrients net-decline slowly, so it eventually dies after
+    ~1-2.5k steps. Two tuning choices made the behaviour learnable: a fitness
+    balance term rewarding the minimum nutrient (opt-in; pure longevity is the
+    faithful default), and trial configurations with reachable resource
+    separations (the paper's intent — scenarios where foraging both is possible).
+  decisions_needed:
+    - question: "Report the M2 agent as the single analyzed agent (as the paper does), or also evolve M1/M3 for a full morphology comparison?"
+      context: "The paper's deep dynamical analysis is of ONE morphology-2 agent. M1/M3 are presented here structurally; evolving them is a documented extension."
+
+scientific_argument:
+  main_claim: |
+    Action switching in this agent is a property of brain-body-environment
+    dynamics coupled through internal metabolic state: the same sensorimotor loop
+    produces two different foraging actions and autonomous transitions between
+    them, with no internal action-selection arbiter.
+  evidence_for:
+    - "Forages both resources in 11/11 trial configs (switches in every scenario)."
+    - "Survives 1769 steps on average vs 758 for a non-mover (2.3x) by replenishing both nutrients."
+    - "Distance-to-A and distance-to-B are anti-phase; nutrient levels sawtooth in step with engagement (figures/action_switching.png)."
+    - "Switching behaviour emerges over evolution (figures/evolution_curves.png): #configs-foraging-both reaches 11/11 by generation 20."
+  evidence_against:
+    - "The agent is not immortal: both nutrients net-decline over a trial, so it eventually starves (~1-2.5k steps) rather than surviving indefinitely."
+  key_figures:
+    - "figures/forage.gif — the agent shuttling between resources, with live nutrient bars"
+    - "figures/action_switching.png — anti-phase distance traces + sawtooth nutrients (the switching signature)"
+    - "figures/nutrient_phase.png — internal-state (nutrient A vs B) phase plot"
+    - "figures/evolution_curves.png — switching behaviour emerging over evolution"
+  caveats:
+    - "Fitness used an opt-in balance term; the paper-faithful pure-longevity fitness is the default."
+    - "Trial configs use reachable resource separations so switching is physically possible."
+    - "A single evolved morphology-2 agent; M1/M3 are shown structurally, not evolved here."
+
+biological_story: |
+  An animal that needs two different nutrients cannot simply walk up one gradient
+  forever. It must notice, from the inside, that one reserve is running low, break
+  off whatever it is doing, and go get the other — then switch back. Agmon &
+  Beer's forager is the minimal creature that does this. Its single front stalk
+  smells both chemical signals, and two internal sensors report how full each
+  nutrient store is. When both are comfortable it exploits the nearer resource;
+  as the neglected store falls, the internal sensors tip the balance of the little
+  nervous system and the whole coupled system slides into a new mode of
+  coordination — heading for the other resource. The result, read off the
+  trajectories, is a clean alternation: the agent orbits from one resource to the
+  other and back, the two distances in anti-phase, each nutrient sawtoothing up
+  when fed and down when left. Nowhere is there a module that decides "now switch";
+  the switch is a transition in the flow of the brain-body-environment system,
+  which is exactly the point of the paper.
+
+at_a_glance:
+  - {study: as-forage-and-survival, role: "the agent forages both resources and outlives a non-mover"}
+  - {study: as-switching-dynamics, role: "the dynamical signature of switching: anti-phase engagement + sawtooth nutrients"}
+  - {study: as-morphology-comparison, role: "the three morphologies' sensing; M2 is the evolved/analyzed agent"}
+
+glossary:
+  - {term: "Action switching", definition: "Autonomously changing which coordinated action is engaged (here: which resource is foraged) without a higher-level selector."}
+  - {term: "Internal/metabolic state", definition: "The agent's two nutrient levels, sensed internally and coupled to the environment via eating."}
+  - {term: "Chemosensor stalk", definition: "A sensor projecting 6 units from the body, reading a resource's chemical concentration at its tip."}
+  - {term: "Sensorimotor coordination mode", definition: "A transient regime in which a subset of sensors/effectors drives a particular action (approach/eat A, or B)."}
+
+studies:
+  - as-forage-and-survival
+  - as-switching-dynamics
+  - as-morphology-comparison
+
+expert_docs: []
+acceptance_criteria:
+  - {study: as-forage-and-survival, behavior: forages-both-and-outlives-nonmover}
+  - {study: as-switching-dynamics, behavior: antiphase-engagement-sawtooth-nutrients}
+  - {study: as-morphology-comparison, behavior: morphology-sensing-characterized}
+
+competing_frameworks:
+  - {name: "Hierarchical action-selection (arbiter) view", relation: "contrasts-with — here switching has no central selector; it is a dynamical transition"}
+
+narrative_spine_skip: []

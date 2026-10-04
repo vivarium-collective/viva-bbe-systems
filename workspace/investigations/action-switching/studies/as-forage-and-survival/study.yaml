@@ -1,0 +1,57 @@
+schema_version: 3
+name: as-forage-and-survival
+investigation: action-switching
+title: Forage Both & Outlive a Non-Mover
+status: ran
+confidence: Accepted
+question: 'Does the evolved forager keep both nutrients alive by visiting both resources, and does it
+  survive longer than a passive agent?
+
+  '
+claim: 'The agent forages both resources in all 11 configs and survives 1769 steps on average vs 758 for
+  a non-mover (2.3x).
+
+  '
+expected_behavior:
+- name: forages-both-and-outlives-nonmover
+  observable: forages-both + mean-survival
+  condition: committed M2 seed, 11 configs, max_steps 2500
+  rationale: 'Forages both resources (eats from each) in >=10/11 configs; mean survival > 1.5x a non-mover.
+    Verified in tests/test_forager_seed.py.
+
+    '
+findings:
+- summary: Forages both in 11/11; mean survival 1769 vs non-mover 758.
+  detail: 'figures/forage.gif shows the agent shuttling between resources while both nutrient bars are
+    sustained; figures/trajectory_nutrients.png shows the spatial loop + nutrient time series.
+
+    '
+visualizations:
+- name: forage
+  chart: ../../figures/forage.gif
+  config:
+    caption: Video — the agent shuttling between the two resources, with live nutrient bars.
+- name: trajectory and nutrients
+  chart: ../../figures/trajectory_nutrients.png
+  config:
+    caption: Spatial path between the resources + the two nutrient levels over time.
+- name: evolution
+  chart: ../../figures/evolution_curves.png
+  config:
+    caption: Switching behaviour emerging over evolution (foraging-both reaches 11/11 by gen 20).
+- name: evolution progress
+  chart: ../../figures/evolution_progress.gif
+  config:
+    caption: Best agent's trajectory improving across generations.
+baseline:
+- name: forager-brain
+  process: CTRNNProcess
+  params:
+    size: 9
+    center_crossing: true
+    motor_indices:
+    - 8
+    - 7
+variants: []
+interventions: []
+runs: []

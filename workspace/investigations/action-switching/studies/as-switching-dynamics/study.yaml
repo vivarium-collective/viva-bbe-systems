@@ -1,0 +1,55 @@
+schema_version: 3
+name: as-switching-dynamics
+investigation: action-switching
+title: The Dynamical Signature of Switching
+status: ran
+confidence: Accepted
+question: 'What is the dynamical signature of the agent''s action switching — how do its distance-to-resource
+  and internal nutrient states evolve as it alternates?
+
+  '
+claim: 'Distance to A and B are anti-phase and the nutrients sawtooth in step with engagement — the agent
+  rhythmically switches between foraging the two resources.
+
+  '
+expected_behavior:
+- name: antiphase-engagement-sawtooth-nutrients
+  observable: engagement-and-nutrient-traces
+  condition: committed M2 seed, representative config, max_steps 2500
+  rationale: 'Distance-to-A and distance-to-B alternate below the resource radius (anti-phase engagement);
+    each nutrient rises when its resource is engaged and falls otherwise (sawtooth).
+
+    '
+findings:
+- summary: ~9-10 alternating engagement cycles; nutrients sawtooth, sustained by switching (slow net decline).
+  detail: 'figures/action_switching.png: shaded bands alternate red/green (engaged with A/B) in anti-phase;
+    the nutrient panel shows each level rising on engagement. figures/nutrient_phase.png traces the switching
+    cycle in internal-state space.
+
+    '
+visualizations:
+- name: action switching
+  chart: ../../figures/action_switching.png
+  config:
+    caption: Anti-phase distance-to-resource traces (shaded = engaged) + sawtooth nutrient levels — the
+      switching signature (cf. Beer Fig. 12).
+- name: internal-state phase
+  chart: ../../figures/nutrient_phase.png
+  config:
+    caption: Nutrient A vs nutrient B over the trial — the switching cycle in internal state.
+- name: forage
+  chart: ../../figures/forage.gif
+  config:
+    caption: Video — the switching behaviour in the world.
+baseline:
+- name: forager-brain
+  process: CTRNNProcess
+  params:
+    size: 9
+    center_crossing: true
+    motor_indices:
+    - 8
+    - 7
+variants: []
+interventions: []
+runs: []
