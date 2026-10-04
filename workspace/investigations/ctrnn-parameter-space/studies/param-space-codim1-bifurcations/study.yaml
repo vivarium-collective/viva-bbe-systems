@@ -55,7 +55,7 @@ figures:
     caption: "Codim-1 bifurcation: equilibria vs self-weight; black = stable, red = unstable."
 
   - path: ../../figures/phase_trajectory.gif
-    caption: "Video (dynamical analysis) — CTRNN state trajectory underlying the bifurcating dynamics (2-neuron oscillator)."
+    caption: "Video (dynamical analysis) — an illustrative 2-neuron CTRNN oscillator trajectory (the codim-1 study itself analyzes a single self-excitatory neuron)."
 
 baseline: []
 variants: []

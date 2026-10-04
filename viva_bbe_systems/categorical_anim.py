@@ -33,19 +33,9 @@ def _default_outdir() -> Path:
 
 
 def _record(agent, offset, shape, *, H=20.0, vy=1.0, dt=0.1, steps=200, obj_size=3.0):
-    agent.ctrnn.reset(np.zeros(agent.ctrnn.size))
-    agent.body.x = 0.0
-    obj = FallingObject(center=np.array([float(offset), H]), vy=vy, size=obj_size, shape=shape)
-    ax_, oc_ = np.zeros(steps), np.zeros((steps, 2))
-    for t in range(steps):
-        I = agent.sensor_weights @ agent.body.sense(obj)
-        o = agent.ctrnn.step(external_input=I)
-        motor = np.array([o[agent.motor_indices[0]], o[agent.motor_indices[1]]])
-        agent.body.act(motor, dt=dt, gain=agent.motor_gain)
-        obj.step(dt)
-        ax_[t] = agent.body.x
-        oc_[t] = obj.center
-    return ax_, oc_, obj_size
+    r = agent.run_trial(offset, shape, H=H, vy=vy, dt=dt, steps=steps,
+                        obj_size=obj_size, record_outputs=True)
+    return r["trajectory"][:, 0], r["obj_centers"], obj_size
 
 
 def _object_patch(center, size, shape, color):
@@ -99,18 +89,8 @@ def animate_trial(agent, offset, shape, path, *, steps=200, stride=2, H=20.0,
 
 
 def _record_outputs(agent, offset, shape, *, H=20.0, vy=1.0, dt=0.1, steps=200, obj_size=3.0):
-    agent.ctrnn.reset(np.zeros(agent.ctrnn.size))
-    agent.body.x = 0.0
-    obj = FallingObject(center=np.array([float(offset), H]), vy=vy, size=obj_size, shape=shape)
-    out = np.zeros((steps, agent.ctrnn.size))
-    for t in range(steps):
-        I = agent.sensor_weights @ agent.body.sense(obj)
-        o = agent.ctrnn.step(external_input=I)
-        motor = np.array([o[agent.motor_indices[0]], o[agent.motor_indices[1]]])
-        agent.body.act(motor, dt=dt, gain=agent.motor_gain)
-        obj.step(dt)
-        out[t] = o
-    return out
+    return agent.run_trial(offset, shape, H=H, vy=vy, dt=dt, steps=steps,
+                           obj_size=obj_size, record_outputs=True)["outputs"]
 
 
 def animate_brain_phase(agent, path, *, offset=3.0, steps=200, stride=2):

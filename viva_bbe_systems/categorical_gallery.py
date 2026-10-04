@@ -34,22 +34,10 @@ def _default_outdir() -> Path:
 
 def run_recorded(agent, offset, shape, *, H=20.0, vy=1.0, dt=0.1, steps=200, obj_size=3.0):
     """Run one trial, recording per-step agent_x, obj_x, and CTRNN neuron outputs."""
-    agent.ctrnn.reset(np.zeros(agent.ctrnn.size))
-    agent.body.x = 0.0
-    obj = FallingObject(center=np.array([float(offset), H]), vy=vy, size=obj_size, shape=shape)
-    T = steps
-    rec = {"t": np.arange(T) * dt, "agent_x": np.zeros(T), "obj_x": np.zeros(T),
-           "outputs": np.zeros((T, agent.ctrnn.size))}
-    for t in range(T):
-        I = agent.sensor_weights @ agent.body.sense(obj)
-        o = agent.ctrnn.step(external_input=I)
-        motor = np.array([o[agent.motor_indices[0]], o[agent.motor_indices[1]]])
-        agent.body.act(motor, dt=dt, gain=agent.motor_gain)
-        obj.step(dt)
-        rec["agent_x"][t] = agent.body.x
-        rec["obj_x"][t] = obj.center[0]
-        rec["outputs"][t] = o
-    return rec
+    r = agent.run_trial(offset, shape, H=H, vy=vy, dt=dt, steps=steps,
+                        obj_size=obj_size, record_outputs=True)
+    return {"t": np.arange(steps) * dt, "agent_x": r["trajectory"][:, 0],
+            "obj_x": r["trajectory"][:, 1], "outputs": r["outputs"]}
 
 
 def fig_trajectories(agent):
