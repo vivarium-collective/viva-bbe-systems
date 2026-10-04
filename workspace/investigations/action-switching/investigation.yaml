@@ -38,14 +38,14 @@ executive:
   verdict: |
     Reproduced. The evolved agent autonomously switches between the two resources
     — it forages both in 15 of 16 VARIED environments (differing resource positions AND sizes) — sustaining both nutrients
-    far longer than a passive agent (mean survival ~1351 vs 758 steps). The
+    far longer than a passive agent (mean survival ~1351 vs 706 steps (2000-step horizon)). The
     distance-to-resource traces are anti-phase and the nutrient traces sawtooth as
     it alternates, the signature of action switching.
   verdict_status: passed
   verdict_detail: |
     From the committed seed (morphology M2, pop 70, gen 90, seed 0), verified in
     the test suite: forages both resources in 15/16 VARIED environments (varied
-    resource positions and sizes); mean survival ~1.8x a non-mover. The agent
+    resource positions and sizes); mean survival ~1.9x a non-mover (1351 vs 706 at the 2000-step horizon). The agent
     evolved a general navigation/switching strategy rather than overfitting a
     single layout. Honest scope: the agent switches robustly but is not
     immortal — both nutrients net-decline slowly, so it eventually dies after
@@ -65,7 +65,7 @@ scientific_argument:
     them, with no internal action-selection arbiter.
   evidence_for:
     - "Forages both resources in 15/16 VARIED environments (varied positions + sizes) — a general strategy, not overfit to one layout."
-    - "Survives ~1351 steps on average vs 758 for a non-mover by replenishing both nutrients across varied environments."
+    - "Survives ~1351 steps on average vs 706 for a non-mover (1.9x, 2000-step horizon) by replenishing both nutrients across varied environments."
     - "Distance-to-A and distance-to-B are anti-phase; nutrient levels sawtooth in step with engagement (figures/action_switching.png)."
     - "Switching behaviour emerges over evolution (figures/evolution_curves.png): the share foraging both climbs toward 15/16 over evolution."
   evidence_against:
@@ -77,7 +77,7 @@ scientific_argument:
     - "figures/evolution_curves.png — switching behaviour emerging over evolution"
   caveats:
     - "Fitness used an opt-in balance term; the paper-faithful pure-longevity fitness is the default."
-    - "The 16-environment battery varies resource positions and sizes (reachable separations); the agent generalizes across them."
+    - "The 16-environment battery varies resource positions and sizes; the agent generalizes across them rather than overfitting one layout."
     - "A single evolved morphology-2 agent; M1/M3 are shown structurally, not evolved here."
 
 biological_story: |

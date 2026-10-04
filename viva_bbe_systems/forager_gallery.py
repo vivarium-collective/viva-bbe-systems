@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .tasks.evolve_forager import load_seed, DEFAULT_PATH, forager_spec
-from .tasks.forager_fitness import TRIAL_CONFIGS
+from .tasks.forager_fitness import TRIAL_CONFIGS, run_config
 from .bodies.chemotactic_forager import ChemotacticForager
 from .agents.forager_agent import ForagerAgent
 from .environments.chemotaxis_resources import ChemotaxisEnv, Resource
@@ -36,7 +36,6 @@ def _default_outdir() -> Path:
 
 
 def _run(agent, config, max_steps=2500):
-    from .tasks.forager_fitness import run_config
     r = run_config(agent, config, max_steps=max_steps)
     r["res_a"] = np.array(config["resource_a"], float)
     r["res_b"] = np.array(config["resource_b"], float)

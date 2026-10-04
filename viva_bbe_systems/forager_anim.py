@@ -21,7 +21,7 @@ from matplotlib.patches import Circle as CirclePatch
 
 from .anim import save_gif
 from .tasks.evolve_forager import load_seed, DEFAULT_PATH, forager_spec
-from .tasks.forager_fitness import TRIAL_CONFIGS
+from .tasks.forager_fitness import TRIAL_CONFIGS, run_config
 from .bodies.chemotactic_forager import ChemotacticForager
 from .agents.forager_agent import ForagerAgent
 from .environments.chemotaxis_resources import ChemotaxisEnv, Resource
@@ -64,7 +64,6 @@ def _headings(path):
 
 def animate_forage(agent, config, out_path, *, max_steps=2500, stride=None,
                    n_frames=140, sensor_dist=6.0):
-    from .tasks.forager_fitness import run_config
     r = run_config(agent, config, max_steps=max_steps)
     path = r["path"]
     levels = r["levels_hist"]
@@ -121,7 +120,6 @@ def animate_multi(agent, configs, out_path, *, cols=3, rows=2, max_steps=2500,
     """One GIF, a grid of DIFFERENT environments (varied resource positions +
     sizes), the agent foraging in each simultaneously — showing it generalizes
     across conditions, not just one layout."""
-    from .tasks.forager_fitness import run_config
     configs = list(configs)[:rows * cols]
     runs = [run_config(agent, c, max_steps=max_steps) for c in configs]
     Tmax = max(len(r["path"]) for r in runs)
@@ -160,7 +158,6 @@ def animate_neural(agent, config, out_path, *, max_steps=2500, n_frames=140):
     """Neural-activation GIF: the CTRNN's firing pattern over a trial. Left — a
     node-ring graph (neurons coloured by output, edges = weights). Right — a
     scrolling raster (neurons x time) with a sweep line."""
-    from .tasks.forager_fitness import run_config
     r = run_config(agent, config, max_steps=max_steps, record=True)
     outs = r["outputs"]            # (T, N)
     T, N = outs.shape

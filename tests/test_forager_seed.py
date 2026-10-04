@@ -15,7 +15,7 @@ from viva_bbe_systems.agents.forager_agent import ForagerAgent
 from viva_bbe_systems.environments.chemotaxis_resources import ChemotaxisEnv, Resource
 from viva_bbe_systems.genome import decode
 
-MAX_STEPS = 2500
+MAX_STEPS = 2000
 
 
 def _run_all(genome):

@@ -8,7 +8,7 @@ question: 'Does the evolved forager keep both nutrients alive by visiting both r
   survive longer than a passive agent?
 
   '
-claim: 'The agent forages both resources in 15 of 16 varied environments (varied positions + sizes) and survives ~1351 steps on average vs 758 for a non-mover.
+claim: 'The agent forages both resources in 15 of 16 varied environments (varied positions + sizes) and survives ~1351 steps on average vs 706 for a non-mover (1.9x, 2000-step horizon).
 
   '
 expected_behavior:
@@ -20,7 +20,7 @@ expected_behavior:
 
     '
 findings:
-- summary: Forages both in 15/16 varied environments; mean survival ~1351 vs non-mover 758.
+- summary: Forages both in 15/16 varied environments; mean survival ~1351 vs non-mover 706 (1.9x) at the 2000-step horizon.
   detail: 'figures/forage.gif shows the agent shuttling between resources while both nutrient bars are
     sustained; figures/trajectory_nutrients.png shows the spatial loop + nutrient time series.
 

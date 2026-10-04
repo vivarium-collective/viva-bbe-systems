@@ -1,6 +1,7 @@
 """Longevity fitness for the chemotactic forager (Agmon & Beer 2014).
 
-Fitness = mean survival over 11 fixed trial configs, normalized by max_steps.
+Fitness = mean survival over a battery of 16 VARIED environments (resource
+positions + sizes differ per trial), normalized by max_steps.
 """
 from __future__ import annotations
 
@@ -24,7 +25,8 @@ def _make_configs(n=16, seed=7):
     in POSITION and SIZE (radius) across trials, so an agent must evolve a
     general navigation/switching strategy rather than overfit a fixed layout.
 
-    Separations stay reachable (~22-42 units, < one nutrient-lifetime of travel)
+    Separations are mostly ~22-42 units (a few land closer after the boundary
+    clip); all < one nutrient-lifetime of travel
     with the start near the midpoint and varied orientation + initial hunger.
     Fixed-seed RNG → the same battery every run.
     """

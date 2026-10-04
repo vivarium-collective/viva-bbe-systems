@@ -37,7 +37,7 @@ visualizations:
   chart: ../../figures/neural_activity.gif
   config:
     caption: 'Video — the CTRNN''s activation pattern during switching: node-ring graph (neuron outputs
-      + weights) + a time raster; the chemosensor neurons alternate anti-phase.'
+      + weights) + a time raster; the sensor and motor neurons modulate as the agent engages each resource.'
 - name: internal-state phase
   chart: ../../figures/nutrient_phase.png
   config:

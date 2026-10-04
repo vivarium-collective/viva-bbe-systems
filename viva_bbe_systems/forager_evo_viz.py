@@ -20,7 +20,7 @@ import numpy as np
 
 from .anim import save_gif
 from .tasks.evolve_forager import load_checkpoints, CHECKPOINT_PATH, forager_spec
-from .tasks.forager_fitness import TRIAL_CONFIGS
+from .tasks.forager_fitness import TRIAL_CONFIGS, run_config
 from .bodies.chemotactic_forager import ChemotacticForager
 from .agents.forager_agent import ForagerAgent
 from .environments.chemotaxis_resources import ChemotaxisEnv, Resource
@@ -44,7 +44,6 @@ def _behaviour(genome):
     agent = _agent(genome)
     both, survs = 0, []
     for c in TRIAL_CONFIGS:
-        from .tasks.forager_fitness import run_config
         r = run_config(agent, c, max_steps=MAX_STEPS)
         lh = r["levels_hist"]
         if float(np.diff(lh[:, 0]).max()) > 0 and float(np.diff(lh[:, 1]).max()) > 0:
@@ -55,7 +54,6 @@ def _behaviour(genome):
 
 def _trajectory(genome, config):
     agent = _agent(genome)
-    from .tasks.forager_fitness import run_config
     return run_config(agent, config, max_steps=MAX_STEPS)["path"]
 
 
