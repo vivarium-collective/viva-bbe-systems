@@ -54,7 +54,14 @@ figures:
   - path: ../../figures/phase_trajectory.gif
     caption: "Video (dynamical analysis) — CTRNN state trajectory on the phase plane (2-neuron oscillator)."
 
-baseline: []
+baseline:
+  - name: ctrnn-brain
+    process: CTRNNProcess
+    params:
+      size: 2
+      weights: [[4.5, 1.0], [-1.0, 4.5]]
+      center_crossing: true
+      motor_indices: [1]
 variants: []
 interventions: []
 runs: []

@@ -57,7 +57,14 @@ figures:
   - path: ../../figures/phase_trajectory.gif
     caption: "Video (dynamical analysis) — an illustrative 2-neuron CTRNN oscillator trajectory (the codim-1 study itself analyzes a single self-excitatory neuron)."
 
-baseline: []
+baseline:
+  - name: ctrnn-brain
+    process: CTRNNProcess
+    params:
+      size: 2
+      weights: [[4.5, 1.0], [-1.0, 4.5]]
+      center_crossing: true
+      motor_indices: [1]
 variants: []
 interventions: []
 runs: []

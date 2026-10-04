@@ -55,7 +55,12 @@ figures:
   - path: ../../figures/evolution_progress.gif
     caption: "Evolution — the best agent's catch trajectory improving across generations."
 
-baseline: []
+baseline:
+  - name: categorical-agent
+    composite: viva_bbe_systems.composites.categorical-perception
+    params:
+      offset: 3.0
+      shape: circle
 variants: []
 interventions: []
 runs: []

@@ -59,7 +59,14 @@ figures:
   - path: ../../figures/phase_trajectory.gif
     caption: "Video (dynamical analysis) — a state trajectory spiralling off the unstable equilibrium toward the limit cycle."
 
-baseline: []
+baseline:
+  - name: ctrnn-brain
+    process: CTRNNProcess
+    params:
+      size: 2
+      weights: [[4.5, 1.0], [-1.0, 4.5]]
+      center_crossing: true
+      motor_indices: [1]
 variants: []
 interventions: []
 runs: []
