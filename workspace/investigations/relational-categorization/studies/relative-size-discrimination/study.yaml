@@ -1,0 +1,57 @@
+schema_version: 3
+name: relative-size-discrimination
+investigation: relational-categorization
+title: Catch the Larger, Avoid the Smaller
+status: ran
+confidence: Accepted
+question: |
+  Does the evolved agent catch the second object when it is larger than the
+  first and avoid it when smaller — above what any memoryless policy can do?
+claim: |
+  The agent categorizes by RELATIVE size, reaching 0.688 accuracy (catch 0.625,
+  avoid 0.75) — above the 0.625 ceiling that any single-object (memoryless)
+  policy can reach on this role-balanced battery, and above the 0.5 always-catch
+  / always-avoid baselines.
+expected_behavior:
+- name: categorizes-above-memoryless-ceiling
+  observable: accuracy (overall + per-relation) vs baselines
+  condition: committed 8-neuron seed, 16-trial role-balanced battery
+  rationale: |
+    Accuracy > 0.625 (the best any absolute-size threshold reaches here) AND >
+    0.5 (always-catch/always-avoid), on BOTH relations (catch and avoid each >
+    0.5). Verified in tests/test_relational_seed.py. Beating the memoryless
+    ceiling requires using object 1 relative to object 2 — i.e. memory.
+findings:
+- summary: Accuracy 0.688 (catch 0.625, avoid 0.75) — above the 0.625 memoryless ceiling and the 0.5 fixed-policy baselines; a genuine but imperfect relational categorizer.
+  detail: |
+    figures/relational.gif shows a should-catch and a should-avoid trial and the
+    outcome; figures/decision_map.png shows the learned response over the (s1,s2)
+    plane tracking the s2=s1 diagonal (imperfectly).
+visualizations:
+- name: behaviour
+  chart: ../../figures/relational.gif
+  config:
+    caption: Video — two objects fall in sequence; the catcher catches the larger (should-catch) or lets the smaller pass (should-avoid).
+- name: decision map
+  chart: ../../figures/decision_map.png
+  config:
+    caption: The agent's catch/avoid response over the (s1, s2) plane, vs the correct s2=s1 diagonal.
+- name: evolution
+  chart: ../../figures/evolution_curves.png
+  config:
+    caption: Accuracy climbing over evolution, against the 0.625 memoryless ceiling and 0.5 chance.
+- name: evolution progress
+  chart: ../../figures/evolution_progress.gif
+  config:
+    caption: The relational decision boundary sharpening across generations.
+baseline:
+- name: relational-cpg
+  process: CTRNNProcess
+  params:
+    size: 8
+    motor_indices:
+    - 6
+    - 7
+variants: []
+interventions: []
+runs: []
