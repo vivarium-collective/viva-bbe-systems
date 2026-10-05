@@ -10,11 +10,11 @@ from ..agents.relational_agent import RelationalAgent
 
 @dataclass(frozen=True)
 class RelGenomeSpec:
-    n_neurons: int = 6
+    n_neurons: int = 8
     n_sensors: int = 7
     sensor_weight_range: tuple = (-5.0, 5.0)
     motor_gain: float = 5.0
-    catch_radius: float = 2.0
+    catch_radius: float = 3.0
     avoid_margin: float = 6.0
 
     @property

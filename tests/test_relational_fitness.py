@@ -16,8 +16,8 @@ def test_decode_roundtrip():
     assert lo.size == hi.size == g.size
     a = decode_agent(g, SPEC)
     assert isinstance(a, RelationalAgent)
-    assert a.sensor_weights.shape == (6, 7)
-    assert a.ctrnn.size == 6
+    assert a.sensor_weights.shape == (8, 7)
+    assert a.ctrnn.size == 8
 
 
 def test_finite_and_deterministic():
@@ -67,7 +67,7 @@ def test_battery_balanced_and_separated():
 
 def test_never_move_scores_chance():
     g = np.zeros(rel_genome_length(SPEC))
-    g[:6] = 1.0
+    g[:SPEC.n_neurons] = 1.0  # tau=1 for ALL neurons
     f = relational_fitness(g)
     # symmetric accuracy-aligned shaping -> a fixed (never-move) policy scores ~chance
     assert f == pytest.approx(0.552, abs=0.02), f  # fixed-policy chance floor

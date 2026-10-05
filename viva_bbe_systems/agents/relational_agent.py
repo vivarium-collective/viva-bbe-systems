@@ -7,7 +7,7 @@ from ..ctrnn import CTRNN
 from ..bodies.categorical_perception import CategoricalBody
 from ..environments.object_stream import TwoObjectStream
 
-RELATIONAL_SIZE = 6
+RELATIONAL_SIZE = 8  # 4 interneurons + 2 motor + headroom for the memory trace
 
 
 class RelationalAgent:
