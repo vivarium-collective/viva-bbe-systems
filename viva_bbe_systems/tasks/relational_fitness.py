@@ -4,18 +4,23 @@ import numpy as np
 from ..bodies.relational_genome import decode_agent, RelGenomeSpec
 
 
-def _make_pairs(seed=0, offsets=(-4.0, 0.0, 4.0)):
-    """Deterministic balanced battery of (s1, s2, offset2). Sizes in [2,6],
-    |s2-s1|>=1. Each size pair appears in both orders (catch/avoid balanced)."""
+def _make_pairs(seed=0, offsets=(-4.0, 0.0, 4.0), sizes=(2.0, 3.0, 4.0, 5.0, 6.0),
+                reps=2):
+    """Deterministic role-balanced-per-size battery of (s1, s2, offset2).
+
+    Uses a SHARED size grid and the ordered pairs at the minimum separation
+    (|s2-s1| = 1.0), so every interior size appears as s2 AND as s1 in both the
+    catch and avoid roles. Only the two extreme sizes are single-role. Including
+    wider-gap pairs (the full ordered grid) lets an absolute-s2 threshold reach
+    ~0.83, because the extremes then dominate; the adjacent-only set bounds any
+    single-object threshold at 0.625, so memory of s1 is required.
+    Each pair repeats `reps` times; offset2 cycles over `offsets`."""
     rng = np.random.default_rng(seed)
-    base = [(2.0, 3.0), (2.0, 4.5), (3.0, 4.0), (3.5, 5.5), (4.0, 6.0), (2.5, 6.0)]
-    pairs = []
-    for i, (a, b) in enumerate(base):
-        for lo_first in (True, False):
-            s1, s2 = (a, b) if lo_first else (b, a)
-            off = float(offsets[int(rng.integers(len(offsets)))])
-            pairs.append((s1, s2, off))
-    return pairs
+    start = int(rng.integers(len(offsets)))
+    pairs = [(a, b) for a in sizes for b in sizes if abs(abs(b - a) - 1.0) < 1e-9]
+    pairs = pairs * reps
+    return [(a, b, float(offsets[(start + k) % len(offsets)]))
+            for k, (a, b) in enumerate(pairs)]
 
 
 SIZE_PAIRS = _make_pairs(seed=0)
@@ -27,6 +32,7 @@ def relational_fitness(genome, spec: RelGenomeSpec | None = None, *, record=Fals
     scores = []
     try:
         for s1, s2, off in SIZE_PAIRS:
+            # intentional: fresh decode per trial -> clean CTRNN state
             agent = decode_agent(genome, spec, dt=dt)
             out = agent.run_trial(s1, s2, offset2=off, dt=dt)
             fd = float(out["final_distance"])
