@@ -3,7 +3,7 @@ import pytest
 
 from viva_bbe_systems.metabolism import Metabolism
 
-EAT, DRAIN = 0.02, 0.0045
+EAT, DRAIN = 0.05, 0.0035  # sped-up spread-forager physics
 
 
 def test_inside_a():
@@ -26,7 +26,7 @@ def test_outside_both_drains():
 
 
 def test_death_at_zero():
-    m = Metabolism(levels=(0.004, 5.0))
+    m = Metabolism(levels=(0.003, 5.0))  # < DRAIN -> dies in one step
     assert m.alive
     m.step(False, False)
     assert m.levels[0] == 0.0

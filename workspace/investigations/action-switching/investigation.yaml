@@ -37,17 +37,24 @@ executive:
     and committed; the studies replay it deterministically.
   verdict: |
     Reproduced. The evolved agent autonomously switches between the two resources
-    — it forages both in 15 of 16 VARIED environments (differing resource positions AND sizes) — sustaining both nutrients
-    far longer than a passive agent (mean survival ~1351 vs 706 steps (2000-step horizon)). The
+    — it forages both in 12 of 16 SPREAD environments (resources 38-65 units apart, varied
+    orientation/size/start) — sustaining both nutrients far longer than a passive agent
+    (mean survival ~1713 vs 854 steps, ~2.0x). The
     distance-to-resource traces are anti-phase and the nutrient traces sawtooth as
     it alternates, the signature of action switching.
   verdict_status: passed
   verdict_detail: |
     From the committed seed (morphology M2, pop 70, gen 90, seed 0), verified in
-    the test suite: forages both resources in 15/16 VARIED environments (varied
-    resource positions and sizes); mean survival ~1.9x a non-mover (1351 vs 706 at the 2000-step horizon). The agent
-    evolved a general navigation/switching strategy rather than overfitting a
-    single layout. Honest scope: the agent switches robustly but is not
+    the test suite: forages both resources in 12/16 SPREAD environments — all near
+    (sep ~35-45) and mid (~48-58) layouts (11/11), with the far tier (~58-70) the
+    reachability frontier (1/5); mean survival ~2.0x a non-mover (1713 vs 854). The
+    agent evolved a genuine searching navigator: it starts at one resource (or
+    between them) and navigates to the other across a weakening gradient, so a
+    single tight circle no longer suffices. ENABLING CHANGE: to make spread
+    layouts physically reachable within a nutrient lifetime, the agent was sped
+    up ~3x (max_thrust 0.025) with a longer-range gradient (decay 0.03), higher
+    eat rate (0.05) and lower drain (0.0035) — documented clean-room parameter
+    choices, not Agmon-Beer-exact. Honest scope: the agent switches robustly but is not
     immortal — both nutrients net-decline slowly, so it eventually dies after
     ~1-2.5k steps. Two tuning choices made the behaviour learnable: a fitness
     balance term rewarding the minimum nutrient (opt-in; pure longevity is the
@@ -64,10 +71,10 @@ scientific_argument:
     produces two different foraging actions and autonomous transitions between
     them, with no internal action-selection arbiter.
   evidence_for:
-    - "Forages both resources in 15/16 VARIED environments (varied positions + sizes) — a general strategy, not overfit to one layout."
-    - "Survives ~1351 steps on average vs 706 for a non-mover (1.9x, 2000-step horizon) by replenishing both nutrients across varied environments."
+    - "Forages both resources in 12/16 SPREAD environments (sep 38-65); all near+mid layouts (11/11), far tier (58-70) is the reachability frontier."
+    - "Survives ~1713 steps on average vs 854 for a non-mover (~2.0x) by navigating between spread resources to replenish both nutrients."
     - "Distance-to-A and distance-to-B are anti-phase; nutrient levels sawtooth in step with engagement (figures/action_switching.png)."
-    - "Switching behaviour emerges over evolution (figures/evolution_curves.png): the share foraging both climbs toward 15/16 over evolution."
+    - "Switching behaviour emerges over evolution (figures/evolution_curves.png): the share foraging both climbs toward 12/16 over evolution."
   evidence_against:
     - "The agent is not immortal: both nutrients net-decline over a trial, so it eventually starves (~1-2.5k steps) rather than surviving indefinitely."
   key_figures:
@@ -77,7 +84,7 @@ scientific_argument:
     - "figures/evolution_curves.png — switching behaviour emerging over evolution"
   caveats:
     - "Fitness used an opt-in balance term; the paper-faithful pure-longevity fitness is the default."
-    - "The 16-environment battery varies resource positions and sizes; the agent generalizes across them rather than overfitting one layout."
+    - "The 16-environment battery SPREADS resources 38-65 units apart (near/mid/far tiers) with varied orientation/size/start; the agent must navigate/search, not loop a fixed circle. Spread is reachable only because the agent was sped up (documented clean-room parameter change)."
     - "A single evolved morphology-2 agent; M1/M3 are shown structurally, not evolved here."
 
 biological_story: |

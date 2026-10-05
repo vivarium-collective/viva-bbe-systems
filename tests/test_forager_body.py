@@ -59,12 +59,12 @@ def test_turn_direction_and_straight():
     f.pos = np.array([50.0, 50.0])
     f.act(1.0, 0.0, env)
     assert f.angle == pytest.approx(PI / 12)
-    assert f.velocity == pytest.approx(0.008)
+    assert f.velocity == pytest.approx(0.025)
     g = ChemotacticForager("M2")
     g.pos = np.array([50.0, 50.0])
     g.act(0.5, 0.5, env)
     assert g.angle == 0.0
-    assert g.velocity == pytest.approx(0.008)
+    assert g.velocity == pytest.approx(0.025)
     assert g.pos[0] > 50.0 and g.pos[1] == pytest.approx(50.0)
 
 
@@ -84,7 +84,7 @@ def test_velocity_integration():
     f.pos = np.array([50.0, 50.0])
     f.velocity = 1.0
     f.act(1.0, 1.0, make_env())
-    assert f.velocity == pytest.approx(0.9 + 2 * 0.008)
+    assert f.velocity == pytest.approx(0.9 + 2 * 0.025)
 
 
 def test_clamps_at_wall():

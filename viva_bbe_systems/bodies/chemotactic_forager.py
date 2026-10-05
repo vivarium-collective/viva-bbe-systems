@@ -18,7 +18,13 @@ MORPHOLOGIES = frozenset(MORPHOLOGY_LAYOUTS)
 
 class ChemotacticForager:
     def __init__(self, morphology="M2", sensor_dist=6.0, max_angle=pi / 12,
-                 max_thrust=0.008, friction=0.9):
+                 max_thrust=0.025, friction=0.9):
+        # max_thrust 0.025 (was 0.008): ~3x top speed so the agent can traverse
+        # SPREAD resource layouts (sep up to ~70) within a nutrient lifetime and
+        # genuinely search for the far resource, rather than only shuttling
+        # between near ones. Paired with a higher eat_rate + longer-range
+        # gradient + lower drain (see Metabolism / concentration) so a faster
+        # pass still replenishes and distant resources stay sensable.
         if morphology not in MORPHOLOGY_LAYOUTS:
             raise ValueError(f"unknown morphology {morphology!r}")
         self.morphology = morphology

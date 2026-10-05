@@ -24,14 +24,14 @@ def test_concentration_flat_inside_radius():
 
 def test_concentration_decays_outside():
     r = Resource(center=np.array([0.0, 0.0]), radius=7.0, signal="A")
-    assert concentration(r, np.array([20.0, 0.0])) == pytest.approx(10 * np.exp(-1), rel=1e-9)
-    assert concentration(r, np.array([20.0, 0.0])) == pytest.approx(3.6788, abs=1e-3)
+    assert concentration(r, np.array([20.0, 0.0])) == pytest.approx(10 * np.exp(-0.03 * 20.0), rel=1e-9)
+    assert concentration(r, np.array([20.0, 0.0])) == pytest.approx(5.4881, abs=1e-3)
 
 
 def test_conc_at_selects_signal(env):
     p = np.array([22.0, 50.0])
     assert env.conc_at(p, "A") == 10.0
-    assert env.conc_at(p, "B") == pytest.approx(10 * np.exp(-0.05 * 58.0))
+    assert env.conc_at(p, "B") == pytest.approx(10 * np.exp(-0.03 * 58.0))
     assert env.conc_at(p, "A") != env.conc_at(p, "B")
     with pytest.raises(ValueError):
         env.conc_at(p, "C")

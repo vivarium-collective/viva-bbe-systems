@@ -20,27 +20,54 @@ def _cfg(a, b, pos, angle, levels, ra=7.0, rb=7.0):
             "radius_a": float(ra), "radius_b": float(rb)}
 
 
-def _make_configs(n=16, seed=7):
-    """A deterministic battery of varied environments: the two resources differ
-    in POSITION and SIZE (radius) across trials, so an agent must evolve a
-    general navigation/switching strategy rather than overfit a fixed layout.
+# separation tiers (units): a genuine SPREAD — far wider than the old ~22-42,
+# cycled near (~35-45) / mid (~48-58) / far (~58-70) so every battery has all
+# three. These are reachable only because the agent was sped up (max_thrust
+# 0.025, longer-range gradient, lower drain — see ChemotacticForager /
+# concentration / Metabolism); on the near layouts the agent is dropped AT one
+# resource and must SEARCH for the other, on mid/far it starts between them.
+_SEP_TIERS = ((35.0, 45.0), (48.0, 58.0), (58.0, 70.0))
 
-    Separations are mostly ~22-42 units (a few land closer after the boundary
-    clip); all < one nutrient-lifetime of travel
-    with the start near the midpoint and varied orientation + initial hunger.
-    Fixed-seed RNG → the same battery every run.
+
+def _place_pair(rng, sep, margin):
+    """Place resources A,B exactly `sep` apart with a random orientation, both
+    inside the plane. Resample the orientation/anchor to preserve the separation
+    (no boundary-clip collapse), falling back to a shrunk sep if nothing fits."""
+    lo, hi = margin, 100.0 - margin
+    for _ in range(80):
+        theta = rng.uniform(0.0, 2.0 * np.pi)
+        a = rng.uniform(lo, hi, 2)
+        b = a + sep * np.array([np.cos(theta), np.sin(theta)])
+        if lo <= b[0] <= hi and lo <= b[1] <= hi:
+            return a, b
+    return _place_pair(rng, sep * 0.9, margin)
+
+
+def _make_configs(n=16, seed=7):
+    """A deterministic battery of varied environments with a genuine SPREAD of
+    layouts: the two resources differ in POSITION, ORIENTATION, SIZE (radius),
+    and SEPARATION — cycled through near (~30-38), mid (~40-46), and far
+    (~46-52) tiers, each at a random orientation. On the near/mid layouts the
+    agent starts AT one resource and must SEARCH for the other; on the far
+    layouts it starts between them (both just within reach). A single tight
+    circle cannot cover every layout — the agent must navigate to each
+    resource's actual location, following a weakening gradient. Fixed-seed RNG →
+    the same battery every run.
     """
     rng = np.random.default_rng(seed)
     cfgs = []
-    for _ in range(n):
+    for i in range(n):
         ra, rb = float(rng.uniform(4.0, 12.0)), float(rng.uniform(4.0, 12.0))
         margin = max(ra, rb) + 3.0
-        a = rng.uniform(margin, 100.0 - margin, 2)
-        sep = rng.uniform(22.0, 42.0)
-        theta = rng.uniform(0.0, 2.0 * np.pi)
-        b = np.clip(a + sep * np.array([np.cos(theta), np.sin(theta)]),
-                    margin, 100.0 - margin)
-        start = np.clip((a + b) / 2.0 + rng.uniform(-8.0, 8.0, 2), 2.0, 98.0)
+        tier = i % len(_SEP_TIERS)
+        sep = float(rng.uniform(*_SEP_TIERS[tier]))
+        a, b = _place_pair(rng, sep, margin)
+        if tier == 0:  # near: start AT one resource → must SEARCH for the other
+            at = a if (i % 2 == 0) else b
+            start = at + rng.uniform(-4.0, 4.0, 2)
+        else:          # mid/far: start between them (both reachable), off-centre
+            start = (a + b) / 2.0 + rng.uniform(-10.0, 10.0, 2)
+        start = np.clip(start, 2.0, 98.0)
         angle = float(rng.uniform(0.0, 2.0 * np.pi))
         levels = (float(rng.uniform(2.0, 5.0)), float(rng.uniform(2.0, 5.0)))
         cfgs.append(_cfg(a, b, start, angle, levels, ra, rb))

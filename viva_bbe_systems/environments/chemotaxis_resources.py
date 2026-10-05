@@ -17,11 +17,16 @@ def _dist(resource, point):
 
 
 def concentration(resource, point):
-    """10 within the radius, else 10*exp(-0.05*d)."""
+    """10 within the radius, else 10*exp(-0.03*d).
+
+    The 0.03 decay (was 0.05) extends the gradient's effective range so a
+    resource up to ~70 units away is still faintly sensable — the agent can
+    orient toward and SEARCH for a far resource across a SPREAD layout.
+    """
     d = _dist(resource, point)
     if d <= resource.radius:
         return 10.0
-    return float(10.0 * np.exp(-0.05 * d))
+    return float(10.0 * np.exp(-0.03 * d))
 
 
 class ChemotaxisEnv:

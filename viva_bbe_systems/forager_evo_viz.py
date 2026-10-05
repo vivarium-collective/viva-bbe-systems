@@ -71,7 +71,7 @@ def fig_evolution_curves(ck):
     axb.set_xlabel("generation"); axb.set_ylabel("mean survival")
     ax2 = axb.twinx()
     ax2.plot(gens, both, "-s", color="#1f77b4", label="#configs foraging both")
-    ax2.set_ylabel("#configs foraging both (of 11)"); ax2.set_ylim(0, 11.5)
+    ax2.set_ylabel(f"#configs foraging both (of {len(TRIAL_CONFIGS)})"); ax2.set_ylim(0, len(TRIAL_CONFIGS) + 0.5)
     axb.set_title("Switching behaviour emerges over evolution")
     lines = axb.get_lines() + ax2.get_lines()
     axb.legend(lines, [l.get_label() for l in lines], loc="lower right")
