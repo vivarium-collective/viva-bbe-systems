@@ -42,12 +42,8 @@ visualizations:
     caption: The held memory in use — the agent acts on object 2 relative to the remembered object 1.
 baseline:
 - name: relational-cpg
-  process: CTRNNProcess
-  params:
-    size: 8
-    motor_indices:
-    - 6
-    - 7
+  composite: viva_bbe_systems.composites.relational
+  params: {}
 variants: []
 interventions: []
 runs: []

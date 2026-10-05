@@ -12,6 +12,7 @@ from viva_superpowers.composite_generator import composite_generator
 from ..processes.categorical_env_process import build_categorical_composite
 from ..processes.ctrnn_process import build_ctrnn_composite
 from ..processes.forager_body_process import build_forager_composite
+from ..processes.relational_body_process import build_relational_composite
 from ..processes.walker_body_process import build_walker_composite
 
 
@@ -59,6 +60,21 @@ def forager(core=None, *, morphology="M2", **kwargs) -> dict:
 
 
 @composite_generator(
+    name="relational",
+    description=(
+        "Williams Beer Gasser 2008 relational categorization: TwoObjectStream -> "
+        "RelationalBodyProcess -> CTRNNProcess, from the committed seed. Catches "
+        "the 2nd object iff larger than the 1st (requires memory of the 1st "
+        "across the ISI)."
+    ),
+    parameters={"s1": {"type": "float", "default": 3.0},
+                "s2": {"type": "float", "default": 5.0}},
+)
+def relational(core=None, *, s1=3.0, s2=5.0, **kwargs) -> dict:
+    return build_relational_composite(s1=s1, s2=s2)
+
+
+@composite_generator(
     name="ctrnn_parameter_space",
     description=(
         "A bare CTRNN (Beer 1995) exploring its own dynamics -- the substrate for "
@@ -74,5 +90,6 @@ __all__ = [
     "categorical_perception",
     "walker",
     "forager",
+    "relational",
     "ctrnn_parameter_space",
 ]

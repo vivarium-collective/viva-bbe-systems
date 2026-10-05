@@ -76,3 +76,25 @@ def test_ctrnn_outputs_finite_through_engine(size):
     outs = np.asarray(sim.state["neuron_outputs"], float)
     assert outs.shape == (size,)
     assert np.all(np.isfinite(outs))
+
+
+def test_relational_through_engine():
+    import viva_bbe_systems.composites  # noqa: F401
+    from process_bigraph.composite_generator import _REGISTRY, build_generator
+    from viva_bbe_systems.processes.relational_body_process import (
+        build_relational_composite)
+    assert "RelationalBodyProcess" in build_core().link_registry
+    gid = "viva_bbe_systems.composites.relational"
+    assert gid in _REGISTRY
+    Composite({"state": build_generator(_REGISTRY[gid])}, core=build_core())
+
+    sim = Composite({"state": build_relational_composite()}, core=build_core())
+    xs, phases = [], []
+    for _ in range(360):
+        sim.run(0.1)
+        xs.append(float(sim.state["agent_x"]))
+        phases.append(float(sim.state["phase"]))
+    assert np.all(np.isfinite(xs))
+    assert max(xs) - min(xs) > 1e-6          # the catcher moved
+    assert phases[0] == 0.0 and max(phases) >= 2.0   # obj1 -> isi -> obj2
+    assert 1.0 in phases

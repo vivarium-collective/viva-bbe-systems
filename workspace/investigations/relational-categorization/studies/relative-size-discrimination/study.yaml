@@ -46,12 +46,8 @@ visualizations:
     caption: The relational decision boundary sharpening across generations.
 baseline:
 - name: relational-cpg
-  process: CTRNNProcess
-  params:
-    size: 8
-    motor_indices:
-    - 6
-    - 7
+  composite: viva_bbe_systems.composites.relational
+  params: {}
 variants: []
 interventions: []
 runs: []
