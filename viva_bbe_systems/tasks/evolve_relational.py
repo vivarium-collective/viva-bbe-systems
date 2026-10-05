@@ -79,7 +79,7 @@ def always_avoid_accuracy() -> float:
 
 
 def main() -> None:
-    res = evolve_relational()
+    res = evolve_relational(record_every=5)  # record_every required for save_checkpoints
     DEFAULT_PATH.parent.mkdir(parents=True, exist_ok=True)
     save_seed(res, DEFAULT_PATH)
     save_checkpoints(res, CHECKPOINT_PATH)
