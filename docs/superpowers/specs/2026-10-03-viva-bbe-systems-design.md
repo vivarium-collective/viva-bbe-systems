@@ -249,7 +249,7 @@ readings assembled by the body.
   at a fixed eating rate while the agent is inside the matching resource and drains
   at a constant metabolic rate everywhere; a nutrient reaching 0 ends the trial
   (death). Survival time (capped at 5000 steps) is the fitness, over the paper's
-  battery of 11 environment configurations.
+  battery of 16 SPREAD environment configurations (separations 38-65).
 - **Studies:**
   - `foraging-and-survival` — the seeded agent sustains both nutrients and survives
     the trial battery.

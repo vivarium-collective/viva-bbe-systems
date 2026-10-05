@@ -39,7 +39,7 @@ executive:
     Reproduced. The evolved agent autonomously switches between the two resources
     — it forages both in 12 of 16 SPREAD environments (resources 38-65 units apart, varied
     orientation/size/start) — sustaining both nutrients far longer than a passive agent
-    (mean survival ~1713 vs 854 steps, ~2.0x). The
+    (mean survival ~1505 vs 854 steps, ~1.8x). The
     distance-to-resource traces are anti-phase and the nutrient traces sawtooth as
     it alternates, the signature of action switching.
   verdict_status: passed
@@ -47,7 +47,7 @@ executive:
     From the committed seed (morphology M2, pop 70, gen 90, seed 0), verified in
     the test suite: forages both resources in 12/16 SPREAD environments — all near
     (sep ~35-45) and mid (~48-58) layouts (11/11), with the far tier (~58-70) the
-    reachability frontier (1/5); mean survival ~2.0x a non-mover (1713 vs 854). The
+    reachability frontier (1/5); mean survival ~1.8x a non-mover (1505 vs 854). The
     agent evolved a genuine searching navigator: it starts at one resource (or
     between them) and navigates to the other across a weakening gradient, so a
     single tight circle no longer suffices. ENABLING CHANGE: to make spread
@@ -72,7 +72,7 @@ scientific_argument:
     them, with no internal action-selection arbiter.
   evidence_for:
     - "Forages both resources in 12/16 SPREAD environments (sep 38-65); all near+mid layouts (11/11), far tier (58-70) is the reachability frontier."
-    - "Survives ~1713 steps on average vs 854 for a non-mover (~2.0x) by navigating between spread resources to replenish both nutrients."
+    - "Survives ~1505 steps on average vs 854 for a non-mover (~1.8x) by navigating between spread resources to replenish both nutrients."
     - "Distance-to-A and distance-to-B are anti-phase; nutrient levels sawtooth in step with engagement (figures/action_switching.png)."
     - "Switching behaviour emerges over evolution (figures/evolution_curves.png): the share foraging both climbs toward 12/16 over evolution."
   evidence_against:

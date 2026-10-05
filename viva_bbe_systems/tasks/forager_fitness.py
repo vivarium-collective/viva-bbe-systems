@@ -46,8 +46,8 @@ def _place_pair(rng, sep, margin):
 def _make_configs(n=16, seed=7):
     """A deterministic battery of varied environments with a genuine SPREAD of
     layouts: the two resources differ in POSITION, ORIENTATION, SIZE (radius),
-    and SEPARATION — cycled through near (~30-38), mid (~40-46), and far
-    (~46-52) tiers, each at a random orientation. On the near/mid layouts the
+    and SEPARATION — cycled through near (~35-45), mid (~48-58), and far
+    (~58-70) tiers (realised separations span ~38-65), each at a random orientation. On the near/mid layouts the
     agent starts AT one resource and must SEARCH for the other; on the far
     layouts it starts between them (both just within reach). A single tight
     circle cannot cover every layout — the agent must navigate to each
