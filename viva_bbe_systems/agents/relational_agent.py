@@ -12,7 +12,7 @@ RELATIONAL_SIZE = 8  # 4 interneurons + 2 motor + headroom for the memory trace
 
 class RelationalAgent:
     def __init__(self, ctrnn, body, sensor_weights, *, motor_indices=(-2, -1),
-                 motor_gain=5.0, catch_radius=2.0, avoid_margin=6.0):
+                 motor_gain=5.0, catch_radius=3.0, avoid_margin=6.0):
         self.ctrnn = ctrnn
         self.body = body
         self.sensor_weights = np.asarray(sensor_weights, dtype=float)

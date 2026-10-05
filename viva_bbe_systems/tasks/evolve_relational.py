@@ -20,7 +20,7 @@ def relational_bounds():
     return rel_bounds(relational_spec())
 
 
-def evolve_relational(*, pop_size=80, generations=120, seed=0, mutation_sd=0.5,
+def evolve_relational(*, pop_size=130, generations=220, seed=0, mutation_sd=0.5,
                       record_every=None) -> dict:
     spec = relational_spec()
     lo, hi = relational_bounds()
@@ -79,7 +79,7 @@ def always_avoid_accuracy() -> float:
 
 
 def main() -> None:
-    res = evolve_relational(record_every=5)  # record_every required for save_checkpoints
+    res = evolve_relational(record_every=22)  # defaults reproduce the committed seed (pop130/gen220)
     DEFAULT_PATH.parent.mkdir(parents=True, exist_ok=True)
     save_seed(res, DEFAULT_PATH)
     save_checkpoints(res, CHECKPOINT_PATH)

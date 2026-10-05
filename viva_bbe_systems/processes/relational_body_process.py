@@ -4,8 +4,13 @@ body, with the two-object stream (obj1 -> ISI -> obj2) baked into its config.
 Wraps :class:`CategoricalBody`, the evolved ``sensor_weights`` and a
 :class:`TwoObjectStream` unchanged. The brain (``CTRNNProcess``) drives the
 catcher through ``motor_output`` and reads ``sensor_weights @ shadow`` back
-through ``sensory_input`` (length ``size``, one-step delay), matching
-``RelationalAgent.run_trial``. ``phase`` is encoded obj1=0, isi=1, obj2=2, done=3.
+through ``sensory_input`` (length ``size``). ``phase`` is encoded obj1=0,
+isi=1, obj2=2, done=3.
+
+NOTE: the composite is a DEMONSTRATION vehicle — env->body->brain are wired
+through stores (one-step delay) and the body acts before sensing, so its
+trajectory differs slightly from ``RelationalAgent.run_trial``; it is not a
+bit-faithful replay of the 0.688-accuracy evaluation.
 """
 from __future__ import annotations
 
