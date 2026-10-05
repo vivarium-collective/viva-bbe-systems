@@ -69,4 +69,6 @@ def test_never_move_scores_chance():
     g = np.zeros(rel_genome_length(SPEC))
     g[:6] = 1.0
     f = relational_fitness(g)
-    assert f == pytest.approx(0.571, abs=0.01), f  # fixed-policy chance floor
+    # symmetric accuracy-aligned shaping -> a fixed (never-move) policy scores ~chance
+    assert f == pytest.approx(0.552, abs=0.02), f  # fixed-policy chance floor
+    assert f < 0.6, "a fixed policy must not beat chance"

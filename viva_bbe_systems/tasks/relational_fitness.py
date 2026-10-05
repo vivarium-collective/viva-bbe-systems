@@ -27,8 +27,20 @@ SIZE_PAIRS = _make_pairs(seed=0)
 
 
 def relational_fitness(genome, spec: RelGenomeSpec | None = None, *, record=False,
-                       dt=0.1, scale=3.0) -> float:
+                       dt=0.1, correct_weight=0.5) -> float:
+    """Symmetric, accuracy-aligned reward. Per trial, let the normalized
+    closeness be ``c = max(0, 1 - final_distance/avoid_margin)`` (1 = on top of
+    obj2, 0 = avoid_margin away). A should-catch trial wants c high, a should-avoid
+    trial wants c low (= ``1 - c``). Each trial scores
+    ``correct_weight*correctness + (1-correct_weight)*position``, where
+    correctness is 1 iff the catch/avoid decision matched. This is SYMMETRIC:
+    always-catch and always-avoid both score ~0.5, so the only way above 0.5 is
+    to actually catch the larger ones AND avoid the smaller ones — which, on the
+    role-balanced battery, requires memory of obj1. (The old asymmetric shaping
+    paid for merely being *near* obj2, so evolution collapsed to always-avoid.)
+    """
     spec = spec or RelGenomeSpec()
+    D = spec.avoid_margin
     scores = []
     try:
         for s1, s2, off in SIZE_PAIRS:
@@ -36,10 +48,10 @@ def relational_fitness(genome, spec: RelGenomeSpec | None = None, *, record=Fals
             agent = decode_agent(genome, spec, dt=dt)
             out = agent.run_trial(s1, s2, offset2=off, dt=dt)
             fd = float(out["final_distance"])
-            if out["should_catch"]:
-                scores.append(scale / (scale + fd))
-            else:
-                scores.append(min(fd, spec.avoid_margin) / spec.avoid_margin)
+            c = max(0.0, 1.0 - fd / D)                 # closeness to obj2 in [0,1]
+            position = c if out["should_catch"] else (1.0 - c)
+            correct = 1.0 if out["correct"] else 0.0
+            scores.append(correct_weight * correct + (1.0 - correct_weight) * position)
     except (FloatingPointError, OverflowError):
         return 0.0
     f = float(np.mean(scores))
