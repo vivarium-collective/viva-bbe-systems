@@ -44,30 +44,26 @@ executive:
     it alternates, the signature of action switching.
   verdict_status: passed
   verdict_detail: |
-    From the committed seed (morphology M2, pop 70, gen 90, seed 0), verified in
-    the test suite: forages both resources in 12/16 FAR high-drain environments. The
-    (sep ~35-45) and mid (~48-58) layouts (11/11), with the far tier (~58-70) the
-key behaviour is GENUINE STATE-DEPENDENT ACTION SWITCHING (the paper's point):
-    ablating the agent's internal nutrient sensors measurably hurts it (+226
-    survival, +2 forages-both come from state-sensing), and its trajectories show
-    it CAMPING at whichever resource is draining fast — which it can only know by
-    sensing its own nutrient levels. This is the fix for an earlier regime where
-    the agent survived by BLIND CIRCLING that ignored the nutrient sensors
-    entirely (ablation changed nothing): with two close/reachable resources, fast
-    circling feeds both regardless of state, so there was no pressure to use
-    internal state. Making the resources FAR (sep 42-62) with HIGH ASYMMETRIC
-    drain (base 0.005, 1.3-1.8x, which nutrient is fast alternates) makes a full
-    round-trip away nearly starve the fast nutrient, so equal-time circling fails
-    and the agent must prioritize by state. Honest scope: the switching is
-    state-dependent but INCOMPLETE — it over-commits to the urgent resource and
-    sometimes lets the slow one slowly die (hence 12/16, not 16/16). ENABLING
-    clean-room choices (not Agmon-Beer-exact): sped-up agent (max_thrust 0.025),
-    longer-range gradient (decay 0.03), eat 0.07, far+high-drain battery. Honest scope: the agent switches robustly but is not
-    immortal — both nutrients net-decline slowly, so it eventually dies after
-    ~1-2.5k steps. Two tuning choices made the behaviour learnable: a fitness
-    balance term rewarding the minimum nutrient (opt-in; pure longevity is the
-    faithful default), and trial configurations with reachable resource
-    separations (the paper's intent — scenarios where foraging both is possible).
+    From the committed seed (morphology M2, pop 100, gen 160, seed 0), verified in
+    the test suite: forages both resources in 12/16 FAR high-drain environments
+    (survival ~2098). The key behaviour is GENUINE STATE-DEPENDENT ACTION
+    SWITCHING (the paper's point): ablating the agent's internal nutrient sensors
+    measurably hurts it (+226 survival, +2 forages-both come from state-sensing),
+    and its trajectories show it CAMPING at whichever resource is draining fast,
+    which it can only know by sensing its own nutrient levels. This fixes an
+    earlier regime where the agent survived by BLIND CIRCLING that ignored the
+    nutrient sensors entirely (ablation changed nothing): with two close,
+    reachable resources, fast circling feeds both regardless of state, so there
+    was no pressure to use internal state. Making the resources FAR (sep 42-62)
+    with HIGH ASYMMETRIC drain (base 0.005, 1.3-1.8x, which nutrient is fast
+    alternates) makes a full round-trip away nearly starve the fast nutrient, so
+    equal-time circling fails and the agent must prioritize by state. Honest
+    scope: the switching is state-dependent but INCOMPLETE; it over-commits to the
+    urgent resource and sometimes lets the slow one slowly die (hence 12/16, not
+    16/16), and it is not immortal (nutrients net-decline, so it eventually
+    starves). ENABLING clean-room choices (not Agmon-Beer-exact): sped-up agent
+    (max_thrust 0.025), longer-range gradient (decay 0.03), eat 0.07, and the
+    far, high-drain battery.
   decisions_needed:
     - question: "Report the M2 agent as the single analyzed agent (as the paper does), or also evolve M1/M3 for a full morphology comparison?"
       context: "The paper's deep dynamical analysis is of ONE morphology-2 agent. M1/M3 are presented here structurally; evolving them is a documented extension."
