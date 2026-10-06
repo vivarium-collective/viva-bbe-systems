@@ -37,24 +37,32 @@ executive:
     and committed; the studies replay it deterministically.
   verdict: |
     Reproduced. The evolved agent autonomously switches between the two resources
-    — it forages both in 12 of 16 SPREAD environments (resources 38-65 units apart, varied
+    — it forages both in 12 of 16 FAR, high-drain environments (resources 42-62 units apart, with
     orientation/size/start) — sustaining both nutrients far longer than a passive agent
-    (mean survival ~1505 vs 854 steps, ~1.8x). The
+    ASYMMETRIC per-nutrient drain). Crucially it is STATE-DEPENDENT: it uses its internal nutrient sensors to prioritize the faster-draining resource. The
     distance-to-resource traces are anti-phase and the nutrient traces sawtooth as
     it alternates, the signature of action switching.
   verdict_status: passed
   verdict_detail: |
     From the committed seed (morphology M2, pop 70, gen 90, seed 0), verified in
-    the test suite: forages both resources in 12/16 SPREAD environments — all near
+    the test suite: forages both resources in 12/16 FAR high-drain environments. The
     (sep ~35-45) and mid (~48-58) layouts (11/11), with the far tier (~58-70) the
-    reachability frontier (1/5); mean survival ~1.8x a non-mover (1505 vs 854). The
-    agent evolved a genuine searching navigator: it starts at one resource (or
-    between them) and navigates to the other across a weakening gradient, so a
-    single tight circle no longer suffices. ENABLING CHANGE: to make spread
-    layouts physically reachable within a nutrient lifetime, the agent was sped
-    up ~3x (max_thrust 0.025) with a longer-range gradient (decay 0.03), higher
-    eat rate (0.05) and lower drain (0.0035) — documented clean-room parameter
-    choices, not Agmon-Beer-exact. Honest scope: the agent switches robustly but is not
+key behaviour is GENUINE STATE-DEPENDENT ACTION SWITCHING (the paper's point):
+    ablating the agent's internal nutrient sensors measurably hurts it (+226
+    survival, +2 forages-both come from state-sensing), and its trajectories show
+    it CAMPING at whichever resource is draining fast — which it can only know by
+    sensing its own nutrient levels. This is the fix for an earlier regime where
+    the agent survived by BLIND CIRCLING that ignored the nutrient sensors
+    entirely (ablation changed nothing): with two close/reachable resources, fast
+    circling feeds both regardless of state, so there was no pressure to use
+    internal state. Making the resources FAR (sep 42-62) with HIGH ASYMMETRIC
+    drain (base 0.005, 1.3-1.8x, which nutrient is fast alternates) makes a full
+    round-trip away nearly starve the fast nutrient, so equal-time circling fails
+    and the agent must prioritize by state. Honest scope: the switching is
+    state-dependent but INCOMPLETE — it over-commits to the urgent resource and
+    sometimes lets the slow one slowly die (hence 12/16, not 16/16). ENABLING
+    clean-room choices (not Agmon-Beer-exact): sped-up agent (max_thrust 0.025),
+    longer-range gradient (decay 0.03), eat 0.07, far+high-drain battery. Honest scope: the agent switches robustly but is not
     immortal — both nutrients net-decline slowly, so it eventually dies after
     ~1-2.5k steps. Two tuning choices made the behaviour learnable: a fitness
     balance term rewarding the minimum nutrient (opt-in; pure longevity is the
@@ -71,8 +79,8 @@ scientific_argument:
     produces two different foraging actions and autonomous transitions between
     them, with no internal action-selection arbiter.
   evidence_for:
-    - "Forages both resources in 12/16 SPREAD environments (sep 38-65); all near+mid layouts (11/11), far tier (58-70) is the reachability frontier."
-    - "Survives ~1505 steps on average vs 854 for a non-mover (~1.8x) by navigating between spread resources to replenish both nutrients."
+    - "Forages both resources in 12/16 FAR high-drain environments (sep 42-62, asymmetric drain), survival ~2098."
+    - "STATE-DEPENDENT: ablating the internal nutrient sensors costs +226 survival + 2 forages-both — the agent genuinely uses internal metabolic state (pinned in tests/test_forager_seed.py), prioritizing the faster-draining resource. The earlier blind-circling regime was ablation-insensitive (sensors unused)."
     - "Distance-to-A and distance-to-B are anti-phase; nutrient levels sawtooth in step with engagement (figures/action_switching.png)."
     - "Switching behaviour emerges over evolution (figures/evolution_curves.png): the share foraging both climbs toward 12/16 over evolution."
   evidence_against:
@@ -84,7 +92,7 @@ scientific_argument:
     - "figures/evolution_curves.png — switching behaviour emerging over evolution"
   caveats:
     - "Fitness used an opt-in balance term; the paper-faithful pure-longevity fitness is the default."
-    - "The 16-environment battery SPREADS resources 38-65 units apart (near/mid/far tiers) with varied orientation/size/start; the agent must navigate/search, not loop a fixed circle. Spread is reachable only because the agent was sped up (documented clean-room parameter change)."
+    - "The battery makes BLIND CIRCLING non-viable (far resources + high asymmetric drain), which is what forces the agent to read internal state. Honest limit: state-dependent but incomplete (over-commits to the urgent resource -> 12/16)."
     - "A single evolved morphology-2 agent; M1/M3 are shown structurally, not evolved here."
 
 biological_story: |

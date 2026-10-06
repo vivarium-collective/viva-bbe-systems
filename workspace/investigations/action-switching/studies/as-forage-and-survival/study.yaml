@@ -8,19 +8,19 @@ question: 'Does the evolved forager keep both nutrients alive by visiting both r
   survive longer than a passive agent?
 
   '
-claim: 'The agent forages both resources in 12 of 16 SPREAD environments (resources 38-65 units apart) and survives ~1505 steps on average vs 854 for a non-mover (~1.8x) — it navigates/searches for the far resource rather than looping a fixed circle.
+claim: 'The agent forages both resources in 12 of 16 FAR, high-drain environments (sep 42-62, asymmetric per-nutrient drain) and is STATE-DEPENDENT: it uses its internal nutrient sensors to prioritize the faster-draining resource (ablating them costs +226 survival + 2 forages-both), rather than the blind circling of the earlier regime.
 
   '
 expected_behavior:
 - name: forages-both-and-outlives-nonmover
   observable: forages-both + mean-survival
-  condition: committed M2 seed, 16 SPREAD environments (sep 38-65), max_steps 2000
-  rationale: 'Forages both resources (eats from each) in >=11/16 spread environments (achieved 12/16: all near+mid, far tier is the frontier); mean survival > 1.5x a non-mover.
+  condition: committed M2 seed, 16 FAR high-drain environments (sep 42-62, asymmetric drain), max_steps 2000
+  rationale: 'Forages both resources in >=11/16 (achieved 12/16); AND genuinely uses internal state — ablating the nutrient sensors measurably hurts foraging (state-dependent switching, not blind circling).
     Verified in tests/test_forager_seed.py.
 
     '
 findings:
-- summary: Forages both in 12/16 spread environments (sep 38-65; all near+mid, far tier the frontier); mean survival ~1505 vs non-mover 854 (~1.8x).
+- summary: Forages both in 12/16 far high-drain environments (survival ~2098); STATE-DEPENDENT — prioritizes the fast-draining resource, ablation of the nutrient sensors costs +226 survival + 2 forages-both (was 0 for the old blind circler).
   detail: 'figures/forage.gif shows the agent shuttling between resources while both nutrient bars are
     sustained; figures/trajectory_nutrients.png shows the spatial loop + nutrient time series.
 
@@ -33,8 +33,8 @@ visualizations:
 - name: many environments
   chart: ../../figures/forage_multi.gif
   config:
-    caption: 'Video — one agent foraging across six different environments (varied resource positions
-      + sizes): a general navigation strategy.'
+    caption: 'Video — one agent foraging across six different far/high-drain environments (varied positions
+      + drain): prioritizing the faster-draining resource (state-dependent).'
 - name: trajectory and nutrients
   chart: ../../figures/trajectory_nutrients.png
   config:
