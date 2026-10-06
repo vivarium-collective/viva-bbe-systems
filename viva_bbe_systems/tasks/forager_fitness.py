@@ -13,11 +13,16 @@ from viva_bbe_systems.environments.chemotaxis_resources import ChemotaxisEnv, Re
 from viva_bbe_systems.genome import decode
 
 
-def _cfg(a, b, pos, angle, levels, ra=7.0, rb=7.0):
-    return {"resource_a": tuple(map(float, a)), "resource_b": tuple(map(float, b)),
-            "start_pos": tuple(map(float, pos)), "start_angle": float(angle),
-            "init_levels": tuple(map(float, levels)),
-            "radius_a": float(ra), "radius_b": float(rb)}
+def _cfg(a, b, pos, angle, levels, ra=7.0, rb=7.0, drain=None, drain_swap_step=None):
+    c = {"resource_a": tuple(map(float, a)), "resource_b": tuple(map(float, b)),
+         "start_pos": tuple(map(float, pos)), "start_angle": float(angle),
+         "init_levels": tuple(map(float, levels)),
+         "radius_a": float(ra), "radius_b": float(rb)}
+    if drain is not None:
+        c["drain"] = tuple(map(float, drain))   # per-nutrient (A,B) drain rates
+    if drain_swap_step is not None:
+        c["drain_swap_step"] = int(drain_swap_step)  # step at which fast/slow swap
+    return c
 
 
 # separation tiers (units): a genuine SPREAD — far wider than the old ~22-42,
@@ -26,7 +31,7 @@ def _cfg(a, b, pos, angle, levels, ra=7.0, rb=7.0):
 # 0.025, longer-range gradient, lower drain — see ChemotacticForager /
 # concentration / Metabolism); on the near layouts the agent is dropped AT one
 # resource and must SEARCH for the other, on mid/far it starts between them.
-_SEP_TIERS = ((35.0, 45.0), (48.0, 58.0), (58.0, 70.0))
+_SEP_TIERS = ((42.0, 50.0), (50.0, 58.0), (55.0, 62.0))
 
 
 def _place_pair(rng, sep, margin):
@@ -62,15 +67,36 @@ def _make_configs(n=16, seed=7):
         tier = i % len(_SEP_TIERS)
         sep = float(rng.uniform(*_SEP_TIERS[tier]))
         a, b = _place_pair(rng, sep, margin)
-        if tier == 0:  # near: start AT one resource → must SEARCH for the other
-            at = a if (i % 2 == 0) else b
-            start = at + rng.uniform(-4.0, 4.0, 2)
-        else:          # mid/far: start between them (both reachable), off-centre
-            start = (a + b) / 2.0 + rng.uniform(-10.0, 10.0, 2)
+        # all tiers are FAR now: start between the resources (both reachable),
+        # off-centre. Resources are far enough that a full round-trip away nearly
+        # starves the fast-draining nutrient, so the agent cannot maintain both
+        # by equal-time circling — it must stay near the urgent (fast) resource
+        # and dash to the other only when it senses that nutrient getting low.
+        start = (a + b) / 2.0 + rng.uniform(-10.0, 10.0, 2)
         start = np.clip(start, 2.0, 98.0)
         angle = float(rng.uniform(0.0, 2.0 * np.pi))
-        levels = (float(rng.uniform(2.0, 5.0)), float(rng.uniform(2.0, 5.0)))
-        cfgs.append(_cfg(a, b, start, angle, levels, ra, rb))
+        levels = (float(rng.uniform(6.0, 10.0)), float(rng.uniform(6.0, 10.0)))  # start with buffer (high-drain far battery)
+        # ASYMMETRIC per-nutrient drain: one nutrient drains up to ~2.6x faster
+        # than the other, and WHICH one varies across the battery. The drain is
+        # internal (invisible in the environment), so the only way to keep both
+        # alive is to SENSE which nutrient is low and go to its resource — a
+        # blind equal-time circler starves the faster-draining one. This is the
+        # selection pressure for genuine state-dependent action switching
+        # (Agmon & Beer 2014), not a fixed loop. Geometric-mean drain is held at
+        # the base rate so overall survivability is comparable across trials.
+        # HIGH base drain (0.006, was 0.0035): combined with the far separations,
+        # a full round-trip away drains the camped nutrient by ~6-9, so the agent
+        # has little slack — it must time its trips by sensing nutrient levels.
+        base = 0.005
+        # moderate asymmetry (ratio 1.3x - 1.9x, sqrt-split): the fast nutrient
+        # nearly starves during a full round trip, so the agent must PRIORITIZE
+        # it (visit it more / stay nearer) — equal-time circling kills it. Which
+        # nutrient is fast alternates across the battery.
+        ratio = float(rng.uniform(1.3, 1.8))
+        k = np.sqrt(ratio)
+        fast_a = (i % 2 == 0)
+        drain = ((base * k, base / k) if fast_a else (base / k, base * k))
+        cfgs.append(_cfg(a, b, start, angle, levels, ra, rb, drain=drain))
     return cfgs
 
 
@@ -92,7 +118,8 @@ def run_config(agent, c, *, max_steps=2500, record=False) -> dict:
     run_trial call, shared by the fitness, the studies' viz, and the tests)."""
     return agent.run_trial(env_from_config(c), c["init_levels"],
                            start_pos=c["start_pos"], start_angle=c["start_angle"],
-                           max_steps=max_steps, record=record)
+                           max_steps=max_steps, record=record, drain_rate=c.get("drain"),
+                           drain_swap_step=c.get("drain_swap_step"))
 
 
 def longevity_fitness(genome, spec, morphology="M2", *, max_steps=5000,

@@ -3,7 +3,7 @@ import pytest
 
 from viva_bbe_systems.metabolism import Metabolism
 
-EAT, DRAIN = 0.05, 0.0035  # sped-up spread-forager physics
+EAT, DRAIN = 0.07, 0.0035  # sped-up spread-forager physics
 
 
 def test_inside_a():

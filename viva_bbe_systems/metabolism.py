@@ -3,7 +3,7 @@ import numpy as np
 
 
 class Metabolism:
-    def __init__(self, levels=(5.0, 5.0), eat_rate=0.05, drain_rate=0.0035, cap=10.0):
+    def __init__(self, levels=(5.0, 5.0), eat_rate=0.07, drain_rate=0.0035, cap=10.0):
         # eat_rate 0.05 (was 0.02): a faster agent spends fewer steps inside a
         # resource, so each pass must replenish more. drain_rate 0.0035 (was
         # 0.0045): a longer nutrient lifetime gives travel headroom for the

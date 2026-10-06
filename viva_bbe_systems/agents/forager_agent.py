@@ -30,18 +30,27 @@ class ForagerAgent:
         self.motor_left_index = motor_left_index
 
     def run_trial(self, env, init_levels, *, start_pos, start_angle=0.0,
-                  max_steps=5000, record=False):
+                  max_steps=5000, record=False, drain_rate=None, drain_swap_step=None):
         ctrnn, body = self.ctrnn, self.body
         ctrnn.reset(np.zeros(ctrnn.size))
         body.pos = np.array(start_pos, float)
         body.angle = float(start_angle)
         body.velocity = 0.0
-        metab = Metabolism(init_levels)
+        # drain_rate may be a per-nutrient 2-vector (asymmetric metabolism):
+        # keeping both nutrients alive then REQUIRES sensing which is low and
+        # going there — a blind circler starves the faster-draining nutrient.
+        # drain_swap_step swaps which nutrient drains fast partway through, so a
+        # fixed time-allocation also fails: the agent must CONTINUOUSLY track
+        # internal state and adapt (Agmon & Beer 2014 action switching).
+        metab = (Metabolism(init_levels, drain_rate=drain_rate)
+                 if drain_rate is not None else Metabolism(init_levels))
         ns = body.n_sensors
 
         path, levels, outs = [], [], []
         steps = 0
         while steps < max_steps:
+            if drain_swap_step is not None and steps == drain_swap_step:
+                metab.drain_rate = np.asarray(metab.drain_rate, float)[::-1].copy()
             full = np.zeros(ctrnn.size)
             full[:ns] = body.sense(env, metab)
             o = ctrnn.step(full)

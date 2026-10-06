@@ -21,7 +21,7 @@ def test_config_battery_varied():
     radii = set()
     for c in TRIAL_CONFIGS:
         assert set(c) == {"resource_a", "resource_b", "start_pos", "start_angle",
-                          "init_levels", "radius_a", "radius_b"}
+                          "init_levels", "radius_a", "radius_b", "drain"}
         radii.add(round(c["radius_a"], 2)); radii.add(round(c["radius_b"], 2))
     assert len(radii) > 10  # resource sizes genuinely vary across the battery
 
