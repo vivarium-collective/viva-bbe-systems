@@ -37,19 +37,53 @@ def _run_all(genome):
     return both, float(np.mean(survs)), survs
 
 
+def _run_all_ablated(genome):
+    """Same, but with the agent's INTERNAL NUTRIENT SENSORS zeroed — it can no
+    longer perceive its own metabolic state, only the chemical gradients."""
+    from viva_bbe_systems.tasks.forager_fitness import run_config
+    spec = forager_spec("M2")
+    agent = ForagerAgent(decode(genome, spec), ChemotacticForager("M2"))
+    orig, nchemo = agent.body.sense, agent.body.n_chemo
+
+    def sense_no_nutrient(env, metab):
+        s = orig(env, metab).copy(); s[nchemo:] = 0.0; return s
+    agent.body.sense = sense_no_nutrient
+    both, survs = 0, []
+    for c in TRIAL_CONFIGS:
+        r = run_config(agent, c, max_steps=MAX_STEPS)
+        lh = r["levels_hist"]
+        if float(np.diff(lh[:, 0]).max()) > 0 and float(np.diff(lh[:, 1]).max()) > 0:
+            both += 1
+        survs.append(r["survival"])
+    return both, float(np.mean(survs))
+
+
 def test_seed_switches_and_outlives_nonmover():
     assert DEFAULT_PATH.exists(), "committed forager seed missing"
     g = load_seed(DEFAULT_PATH)
     both, mean_surv, _ = _run_all(g)
     n = len(TRIAL_CONFIGS)
-    # action switching: forages BOTH resources in most of the SPREAD battery
-    # (achieved 12/16 — all near+mid layouts; the far tier is the frontier).
-    # 11/16 leaves a one-config margin against the deterministic result.
+    # forages BOTH resources in most of the far, high-drain, asymmetric battery
     assert both >= 11, f"only forages both in {both}/{n} spread configs"
-    # survives well beyond a passive non-mover (which starves at ~min_level/drain)
+    # outlives a passive non-mover (the high-drain battery + starting buffer lifts
+    # the non-mover baseline, so the margin is modest but real)
     nm = np.zeros(len(g)); nm[:forager_spec("M2").size] = 1.0
     _, nm_surv, _ = _run_all(nm)
-    assert mean_surv > 1.5 * nm_surv, f"mean survival {mean_surv:.0f} not >> non-mover {nm_surv:.0f}"
+    assert mean_surv > 1.3 * nm_surv, f"mean survival {mean_surv:.0f} not >> non-mover {nm_surv:.0f}"
+
+
+def test_seed_uses_internal_nutrient_state():
+    """The agent genuinely uses its internal nutrient sensors (not blind
+    circling): ablating them measurably hurts foraging. This is the signature of
+    the state-dependent action switching the far+high-drain pressure selects for."""
+    g = load_seed(DEFAULT_PATH)
+    both, surv = _run_all(g)[0], _run_all(g)[1]
+    abl_both, abl_surv = _run_all_ablated(g)
+    # removing the internal state sense costs survival and/or forages-both
+    assert (surv - abl_surv) > 50 or (both - abl_both) >= 1, (
+        f"ablating nutrient sensors barely changed behaviour "
+        f"(intact {both}/{surv:.0f} vs ablated {abl_both}/{abl_surv:.0f}) "
+        f"=> the agent is NOT using internal state")
 
 
 def test_seed_is_deterministic():
