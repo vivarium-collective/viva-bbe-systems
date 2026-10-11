@@ -8,15 +8,22 @@
 # re-scaffolding, or by copying the current source from
 #   vivarium-collective/viva-template/template/.github/workflows/<template>
 # template: build-and-push.yml
-# sha256: 9c3aade91217120961f0053a53f1e9207aeabcd6d0985e664382acc9a67c72fd
+# sha256: 6b95c2b2163ca5c9479dd5091399ca4ec4651e584d9e3ab191ddccd6a8fcef32
 # <<< viva-template-provenance <<<
 
 name: Build and Push Workspace Image
 
+# OPT-IN, not auto-on-push. Building + pushing a full multi-arch Docker image on
+# every commit is heavy and rarely needed for a research workspace — and it fails
+# (and emails) whenever the workspace has no Dockerfile or a dep won't build in a
+# clean image, which is the common case. So this runs only when explicitly
+# dispatched (Actions tab → Run workflow) or on a release tag. Same policy the
+# publish-dashboard workflow already uses. A workspace that genuinely wants an
+# image published on every push can re-add `push: {branches: [main, master]}`.
 on:
+  workflow_dispatch:
   push:
-    branches: [main, master]
-  pull_request:
+    tags: ["v*"]
 
 concurrency:
   group: build-and-push-${{ github.ref }}
@@ -38,6 +45,22 @@ jobs:
         uses: actions/checkout@v6
         with:
           submodules: recursive
+
+      # Fail fast with an actionable message when the workspace has no
+      # Dockerfile. Without this, docker/build-push-action aborts deep in the
+      # build with a cryptic "failed to read dockerfile: no such file or
+      # directory" — which is how several workspaces (e.g. viva-biomodels,
+      # viva-membrane-actin-composite) sat red without an obvious cause. A repo
+      # carrying this workflow is declaring it builds an image, so a missing
+      # Dockerfile is a real misconfiguration: surface it clearly and stop
+      # before the heavy QEMU/buildx setup.
+      - name: Preflight — require a Dockerfile
+        run: |
+          if [ ! -f Dockerfile ]; then
+            echo "::error title=No Dockerfile::This repo has the \"Build and Push Workspace Image\" workflow but no ./Dockerfile, so no image can be built. Add one (copy vivarium-collective/viva-template/template/Dockerfile and adapt it), or delete this workflow if the workspace does not publish a container image."
+            exit 1
+          fi
+          echo "Dockerfile present — proceeding with image build."
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -72,7 +95,10 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          # Override per repository with the IMAGE_PLATFORMS Actions variable
+          # (e.g. `gh variable set IMAGE_PLATFORMS --body linux/amd64`) when a
+          # dependency has no wheels for one platform. Unset keeps both.
+          platforms: ${{ vars.IMAGE_PLATFORMS || 'linux/amd64,linux/arm64' }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
