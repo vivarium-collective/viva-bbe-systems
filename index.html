@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!--
+  gh-pages landing page (seeded by .github/workflows/publish-reports.yml on the
+  first publish). The investigation list between the auto-investigations markers
+  is regenerated automatically by scripts/inject_index_fragment.py — do not edit
+  that block by hand. Everything else is yours to customise.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Investigations</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 820px;
+         margin: 3rem auto; padding: 0 1.25rem; color: #1e293b; line-height: 1.55; }
+  h1 { margin-bottom: .25rem; }
+  .sub { color: #64748b; margin-top: 0; }
+  a { color: #2563eb; }
+  .dash { display: inline-block; margin: 1rem 0 1.5rem; padding: .5rem .9rem;
+          background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+          text-decoration: none; font-weight: 600; }
+  ul { padding-left: 1.1rem; }
+  li { margin: .35rem 0; }
+  .empty { color: #94a3b8; font-style: italic; }
+  footer { margin-top: 2.5rem; color: #94a3b8; font-size: .85em; }
+</style>
+</head>
+<body>
+<h1>Investigations</h1>
+<p class="sub">Read-only published reports. Generated automatically from <code>main</code>.</p>
+
+<a class="dash" href="dashboard/">▸ Browse the full read-only dashboard</a>
+
+<h2>Reports</h2>
+<!-- BEGIN auto-investigations -->
+<div class="invest">
+  <h3><a href="investigations/action-switching.html">Action Switching in Embodied Agents (Agmon &amp; Beer 2014)</a>
+      <span class="pill running">running</span></h3>
+  <p>An evolved CTRNN forager (morphology M2: one front chemosensory stalk sensing both chemical signals, plus two internal nutrient sensors; two force effectors) in a bounded plane with two gradient resources, built on the shared CTRNN brain. It is tasked with staying alive, which requires keeping bo…</p>
+  <p class="meta">3 studies · as-forage-and-survival · as-switching-dynamics · as-morphology-comparison</p>
+</div>
+
+<div class="invest">
+  <h3><a href="investigations/active-categorical-perception.html">Active Categorical Perception (Beer 2003)</a>
+      <span class="pill running">running</span></h3>
+  <p>An evolved CTRNN agent (5 neurons, 7 ray sensors, a two-motor horizontal effector) built on the shared brain, body and environment processes, tasked with catching falling circles and avoiding falling diamonds. The genome was evolved by the workspace&#x27;s own genetic algorithm and is committed; the s…</p>
+  <p class="meta">3 studies · cat-catch-and-avoid · cat-categorization-map · cat-decision-dynamics</p>
+</div>
+
+<div class="invest">
+  <h3><a href="investigations/ctrnn-parameter-space.html">CTRNN Parameter-Space Structure</a>
+      <span class="pill running">running</span></h3>
+  <p>A brain-only study of CTRNN dynamics — no body, no environment. We compute equilibria, Jacobian eigenvalues, nullclines, and bifurcation structure for 1- and 2-neuron CTRNNs, reproducing the parameter-space picture from Beer (2006, 2022).</p>
+  <p class="meta">3 studies · param-space-equilibria-and-nullclines · param-space-codim1-bifurcations · param-space-codim2-structure</p>
+</div>
+
+<div class="invest">
+  <h3><a href="investigations/legged-locomotion.html">Legged Locomotion — a CTRNN Central Pattern Generator (Beer &amp; Gallagher 1992)</a>
+      <span class="pill running">running</span></h3>
+  <p>An evolved 5-neuron CTRNN (one neuron receives the leg-angle proprioceptive input; three motor neurons drive foot up/down, backward-swing and forward-swing) driving a single clean-room leg over flat ground. When the planted foot swings backward the body translates forward; when the foot lifts the…</p>
+  <p class="meta">3 studies · walk-forward · cpg-limit-cycle · gait-and-velocity</p>
+</div>
+
+<div class="invest">
+  <h3><a href="investigations/relational-categorization.html">Relational Categorization — Memory in Embodied Dynamics (Williams, Beer &amp; Gasser 2008)</a>
+      <span class="pill running">running</span></h3>
+  <p>An evolved 8-neuron CTRNN driving a horizontal catcher with ray distance- sensors (the shared categorical-perception body) in a world where two circles fall in sequence. It catches the second circle if it is larger than the first and avoids it if smaller. The genome (CTRNN + sensor weights) was e…</p>
+  <p class="meta">2 studies · relative-size-discrimination · memory-dynamics</p>
+</div>
+<!-- END auto-investigations -->
+
+<footer>Published by the vivarium auto-publish workflows (publish-dashboard.yml · publish-reports.yml).</footer>
+</body>
+</html>
