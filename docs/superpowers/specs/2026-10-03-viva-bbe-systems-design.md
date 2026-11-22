@@ -148,8 +148,8 @@ viva-bbe-systems/
       action-switching.composite.yaml
     data/
       genomes/                   # committed seeded genomes (.npz / .yaml) per model
-  studies/                       # per-study dirs (study.yaml etc.) — created via /viva-study
-  investigations/                # four investigations — created via /viva-investigation
+  studies/                       # per-study dirs (study.yaml etc.) — created via /viva:study
+  investigations/                # four investigations — created via /viva:investigate
   references/                    # Beer PDFs / citation metadata
   tests/
   docs/
@@ -159,7 +159,7 @@ viva-bbe-systems/
 - **Package name:** `viva_bbe_systems` (viva_ prefix per ecosystem convention;
   repo `viva-bbe-systems`).
 - `build_core()` registers every process + composite so the workbench Registry
-  and `/viva-run` can resolve them (standard workspace `build_core` registration
+  and `/viva:run` can resolve them (standard workspace `build_core` registration
   pattern).
 
 ### Dependencies
@@ -299,7 +299,7 @@ possible, and emit a new genome artifact (they do not overwrite the seed).
 - trajectory + success metrics for the embodied tasks.
 
 `viz.py` provides `@visualization`-decorated functions (built/extended via
-`/viva-viz`) rendering: phase portraits with nullclines + fixed points, agent
+`/viva:viz`) rendering: phase portraits with nullclines + fixed points, agent
 trajectory & categorization maps, CPG limit cycles / gait diagrams, and
 bifurcation / parameter-plane plots. Dashboard visuals stay AI-free per ecosystem
 rule.
@@ -322,7 +322,7 @@ rule.
 - **Bodies:** sensor geometry (ray/object intersection) and effector mapping unit
   tested against hand-computed cases; no-intersection → 0 current.
 - **Environments:** object motion + geometry queries deterministic given a seed.
-- **Composites:** each loads, runs N steps via `/viva-run` / `composite-test-run`,
+- **Composites:** each loads, runs N steps via `/viva:run` / `composite-test-run`,
   emits expected observables.
 - **Seeded genomes:** each asserts the paper's qualitative behavior above a
   threshold (e.g., mean catch-distance for circles ≪ for diamonds; forward
@@ -334,7 +334,7 @@ rule.
 
 - References: Beer PDFs / citation metadata under `references/`; acceptance bands
   in studies cite the originating paper via `/viva-cite-bands`.
-- Studies/investigations created through `/viva-study` and `/viva-investigation`
+- Studies/investigations created through `/viva:study` and `/viva:investigate`
   (canonical `study.yaml`, provenance) — never hand-edited around the skills.
 - Processes are explicitly labeled clean-room reproductions of Beer's published
   models.
@@ -342,14 +342,14 @@ rule.
 
 ## Execution outline (for the plan)
 
-1. `/viva-workspace` (standalone) → scaffold `~/code/viva-bbe-systems` on a
+1. `/viva:workspace` (standalone) → scaffold `~/code/viva-bbe-systems` on a
    workspace branch; move this spec into the repo and commit.
-2. `/viva-expert --reproduce` → `CTRNNProcess`, then per-model body/environment
+2. `/viva:model --reproduce` → `CTRNNProcess`, then per-model body/environment
    processes + composites, each with tests (TDD).
 3. `EvolutionStep` + fitness + seeded genomes.
-4. `/viva-investigation` × 4 and `/viva-study` for each study above.
-5. `/viva-viz` for the dynamical-analysis visualizations.
-6. `/viva-report` → publish read-only workbench + reports.
+4. `/viva:investigate` × 4 and `/viva:study` for each study above.
+5. `/viva:viz` for the dynamical-analysis visualizations.
+6. `/viva:report` → publish read-only workbench + reports.
 
 Each model is independently shippable; the plan sequences shared core first, then
 models in the order: ctrnn-parameter-space → categorical-perception →
