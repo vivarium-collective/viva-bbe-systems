@@ -1,6 +1,5 @@
 {
   "mode": "snapshot",
-  "smsApiBase": "",
   "repo": "https://github.com/vivarium-collective/viva-bbe-systems",
   "commit": "87b18a9ddb4d04bcbcf1225af66106336b9a57a9",
   "generated_from_ref": "main"

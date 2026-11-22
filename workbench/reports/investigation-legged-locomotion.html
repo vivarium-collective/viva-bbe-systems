@@ -567,21 +567,848 @@ footer .wrap{display:flex;flex-direction:column;gap:6px}
 <div class="topbar"><div class="wrap">
   <span class="brand">Vivarium <span class="dot">·</span> Workbench</span>
   <span class="switch-label" id="wsname"></span>
+  <button id="dl-html-btn" onclick="__dlPageHtml()" title="Download this report as a self-contained .html file"
+          style="font:inherit;font-size:12.5px;line-height:1;cursor:pointer;border:1px solid var(--line);background:none;color:var(--ink-2);border-radius:8px;padding:7px 11px;white-space:nowrap">&#8595; HTML</button>
   <button class="themebtn" id="themebtn" title="Toggle theme">◐</button>
 </div></div>
+<script>
+// Download-at-the-top: save THIS page as a self-contained .html without going
+// back to the Export menu. Serializes the live DOM (no network — the report is
+// fully self-contained, and this works live or opened from a file).
+function __dlPageHtml(){
+  var name = (document.title || 'report').replace(/\s+[—-]\s+report$/i,'').replace(/[^\w.-]+/g,'_') || 'report';
+  try {
+    var html = '<!doctype html>\n' + document.documentElement.outerHTML;
+    var b = new Blob([html], {type:'text/html'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = name + '.html';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  } catch(e){ /* ignore */ }
+}
+</script>
 
 <main id="app"></main>
 
-<button class="fbfloat" id="fbfloat">Review &amp; export <span class="cnt" id="fbcnt">0</span></button>
-<div class="modal-bg" id="modalbg"><div class="modal">
-  <h3>Feedback report</h3>
-  <div class="sub">Your notes across the report, as a YAML feedback document — the same shape the workbench ingests. Copy it, or select all and save.</div>
-  <textarea id="fbyaml" spellcheck="false" readonly></textarea>
-  <div class="mfoot">
-    <button id="fbcopy">Copy YAML</button>
-    <button class="primary" id="fbclose">Close</button>
-  </div>
-</div></div>
+<!-- Inline expert-feedback: the shared engine (single source:
+     static/study-feedback.js) decorates every `.fbsection` and study card with a
+     hover-corner 💬 and shows a bottom-right export button once notes exist. The
+     engine source is inlined by render_html (token below) so the downloaded
+     report stays self-contained; it emits the canonical meta+annotations YAML. -->
+<script>window.__VIVA_FB_META__ = {"investigation": "legged-locomotion", "title": "Legged Locomotion — a CTRNN Central Pattern Generator (Beer & Gallagher 1992)"};</script>
+<script>
+window.__VIVA_FB_CONFIG__ = (function () {
+  function slugify(s) { return (String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48)) || "x"; }
+  function meta() { return window.__VIVA_FB_META__ || {}; }
+  function cardOf(el) { return el.closest && el.closest('section.card[id^="s-"]'); }
+  function cardSlug(card) { return card ? (card.id || "").replace(/^s-/, "") : ""; }
+  function cardTitle(card) { var t = card && card.querySelector(".ctitle"); return (t && t.textContent.trim()) || cardSlug(card); }
+  function localKey(el) {
+    var id = (el.id || "").trim();
+    if (id) return slugify(id);
+    var sl = el.querySelector(":scope > .slabel"); if (sl) return slugify(sl.textContent);
+    var h = el.querySelector(".sec-h h2, h2, h3, figcaption"); if (h) return slugify(h.textContent);
+    return "section";
+  }
+  function sectionLabel(el) {
+    var h = el.querySelector(":scope > .slabel, .sec-h h2, h2, h3, figcaption");
+    return (h && h.textContent.trim().slice(0, 80)) || localKey(el);
+  }
+  return {
+    context: "investigation",
+    observeRoot: "#app",
+    title: "Feedback on " + ((meta().title) || meta().investigation || "investigation"),
+    meta: { investigation: function () { return meta().investigation || ""; } },
+    storeId: "inv." + slugify(meta().investigation || "investigation"),
+    allowInvestigationEdit: false,
+    noSave: true,
+    groups: [{ id: "studies", name: "Per-study" }, { id: "investigation", name: "Investigation" }],
+    regions: [
+      { sel: 'section.card[id^="s-"]', group: "studies",
+        sid: function (el) { return "study-" + slugify(cardSlug(el)); },
+        label: function (el) { return "Study: " + cardTitle(el); } },
+      { sel: ".fbsection",
+        group: function (el) { return cardOf(el) ? "studies" : "investigation"; },
+        sid: function (el) { var c = cardOf(el); return c ? "study-" + slugify(cardSlug(c)) + "-" + localKey(el) : "investigation-" + localKey(el); },
+        label: function (el) { var c = cardOf(el); return c ? cardTitle(c) + " · " + sectionLabel(el) : sectionLabel(el); } }
+    ]
+  };
+})();
+</script>
+<script>/* study-feedback.js — inline expert-feedback capture engine.
+ *
+ * ONE config-driven engine shared by two surfaces:
+ *   1. the study detail page (loaded as an external /study-feedback.js) — a
+ *      default config decorates every region across the six study tabs;
+ *   2. the investigation report (this same source inlined into the
+ *      self-contained downloadable HTML) — which sets window.__VIVA_FB_CONFIG__
+ *      before this runs, with its own region selectors.
+ *
+ * A reviewer hovers any region, clicks the corner 💬, leaves a disposition
+ * (👍 / ✏️) and a note. Notes collect into ONE YAML. The floating export
+ * button appears in the bottom-right ONLY once something is saved, showing the
+ * count; it opens a tray with Export / Copy and (live only) Save to workspace.
+ *
+ * Works identically on the LIVE workbench and the READ-ONLY published bundle /
+ * downloaded report: collection + export are pure client-side (localStorage);
+ * only "Save to workspace" needs the backend and hides in snapshot mode.
+ *
+ * The exported YAML is the canonical ingest shape read by
+ * viva_superpowers.feedback_import / feedback_tracking / feedback_actions and
+ * the /viva-* responder skills:
+ *
+ *   meta: {investigation, study?, reviewer, generated_at, source}
+ *   annotations:
+ *     <section-id>:
+ *       - {author, text, ts, disposition, region, group}
+ *
+ * Section ids prefixed `study-<slug>` attribute to that study
+ * (study_feedback_actions matches `study-<slug>` and `study-<slug>-*`);
+ * investigation-level sections use other prefixes and stay as report-level
+ * notes.
+ */
+(function () {
+  "use strict";
+
+  if (window.__vivaStudyFeedbackLoaded) return;
+  window.__vivaStudyFeedbackLoaded = true;
+
+  // ── generic helpers ──────────────────────────────────────────────────────────
+  function val(x) {
+    return typeof x === "function" ? x() : x;
+  }
+  function isSnapshot() {
+    try {
+      if (document.body && document.body.classList.contains("snapshot")) return true;
+      var c = window.__DASH_CONFIG__;
+      if (c && c.mode === "snapshot") return true;
+    } catch (e) {}
+    return false;
+  }
+  function nowIso() {
+    return new Date().toISOString().replace(/\.\d+Z$/, "Z");
+  }
+  function slugify(s) {
+    return (
+      String(s || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 48) || "x"
+    );
+  }
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+  function cssEscape(s) {
+    return String(s).replace(/"/g, '\\"');
+  }
+  // The study detail page renders inside a full-height iframe in the SPA (the
+  // outer page scrolls, not the iframe), so position:fixed would pin the
+  // floating button to the iframe's document — i.e. the bottom of the content,
+  // not the screen. When embedded in a same-origin iframe, mount the viewport
+  // chrome (FAB + tray + toast) into the TOP window so it's fixed to the screen.
+  // Standalone pages (direct study page, report, published bundle) are not
+  // framed, so topDoc() === document and behavior is unchanged.
+  function topDoc() {
+    try {
+      if (window.self !== window.top && window.top && window.top.document) return window.top.document;
+    } catch (e) {}
+    return document;
+  }
+  function headingText(el) {
+    var h = el.querySelector(
+      "h1,h2,h3,h4,.card-h,.card-title,.figure-title,.finding-statement,.expert-question-title,.di-card-title,.followup-title,.sec-h,summary"
+    );
+    var t = (h && h.textContent) || el.getAttribute("aria-label") || "";
+    return t.replace(/\s+/g, " ").trim().slice(0, 80);
+  }
+  function textKey(el, fallback) {
+    return slugify(headingText(el) || fallback || "");
+  }
+
+  function reviewerName() {
+    try {
+      return localStorage.getItem("viva.fb.reviewer") || "";
+    } catch (e) {
+      return "";
+    }
+  }
+  function setReviewerName(v) {
+    try {
+      localStorage.setItem("viva.fb.reviewer", v || "");
+    } catch (e) {}
+  }
+
+  // ── default (study-detail) config ────────────────────────────────────────────
+  function studySlug() {
+    return (
+      (window._study && (window._study.name || window._study.slug)) ||
+      window._studyName ||
+      "study"
+    );
+  }
+  function studyInvestigation() {
+    var s = window._study || {};
+    var remembered = "";
+    try {
+      remembered = localStorage.getItem("viva.fb.inv." + slugify(studySlug())) || "";
+    } catch (e) {}
+    var cand =
+      window.__STUDY_INVESTIGATION__ ||
+      remembered ||
+      s.investigation ||
+      (Array.isArray(s.investigations) && s.investigations[0]) ||
+      (window.__DASH_CONFIG__ && window.__DASH_CONFIG__.investigation) ||
+      "";
+    if (cand && typeof cand === "object") cand = cand.slug || cand.name || "";
+    return cand || "";
+  }
+
+  var STUDY_TABS = {
+    overview: { panel: "#panel-overview", name: "Overview", regions: [
+      { sel: ".finding-card", key: function (el) { var i = el.querySelector(".finding-id"); return "finding-" + slugify((i && i.textContent) || textKey(el, "finding")); }, label: function (el) { var i = el.querySelector(".finding-id"); return "Finding " + (((i && i.textContent) || "").trim() || headingText(el)); } },
+      { sel: ".ctr-block", key: function (el) { return "block-" + textKey(el, "block"); }, label: function (el) { return headingText(el) || "Overview block"; } },
+      { sel: ".ov-src", key: function (el) { return "source-" + slugify((el.id || "").replace(/^sref-/, "") || textKey(el, "source")); }, label: function (el) { return "Source " + ((el.id || "").replace(/^sref-/, "") || headingText(el)); } },
+    ] },
+    visualize: { panel: "#panel-visualize", name: "Visualizations", regions: [
+      { sel: ".figure-card", key: function (el) { var t = el.querySelector(".figure-title"); var r = el.querySelector("[data-run-id]"); return "figure-" + slugify(((t && t.textContent) || "") + "-" + ((r && r.getAttribute("data-run-id")) || "")); }, label: function (el) { var t = el.querySelector(".figure-title"); return "Figure: " + (((t && t.textContent) || "").trim() || "untitled"); } },
+    ] },
+    compose: { panel: "#panel-compose", name: "Model", regions: [
+      { sel: ".cond-block", key: function (el) { return "model-" + slugify(el.getAttribute("data-model-composite") || textKey(el, "model")); }, label: function (el) { return "Model: " + (el.getAttribute("data-model-composite") || headingText(el) || "composite"); } },
+      { sel: "#model-composite-cards > *", key: function (el) { return "composite-" + textKey(el, "composite"); }, label: function (el) { return "Composite: " + (headingText(el) || "card"); } },
+      { sel: "#model-readouts-section", key: function () { return "readouts"; }, label: function () { return "Model readouts"; } },
+    ] },
+    simulate: { panel: "#panel-simulate", name: "Simulations", regions: [
+      { sel: "#study-sim-table", key: function () { return "runs"; }, label: function () { return "Simulation runs"; } },
+      { sel: "#results-summary", key: function () { return "results-summary"; }, label: function () { return "Results summary"; } },
+      { sel: "#gate-results", key: function () { return "gate-results"; }, label: function () { return "Gate results"; } },
+      { sel: "#study-analyses-list", key: function () { return "analyses"; }, label: function () { return "Analyses"; } },
+    ] },
+    audit: { panel: "#panel-audit", name: "Audit", regions: [
+      { sel: ".expected-behavior-item", key: function (el) { return "test-" + slugify((el.id || "").replace(/^bt-/, "") || el.getAttribute("data-pytest-node") || textKey(el, "test")); }, label: function (el) { return "Test: " + ((el.id || "").replace(/^bt-/, "") || el.getAttribute("data-pytest-node") || headingText(el)); } },
+      { sel: ".report-card-block", key: function (el) { return "report-card-" + textKey(el, "card"); }, label: function (el) { return "Report card: " + (headingText(el) || "card"); } },
+      { sel: ".audit-check-item", key: function (el) { var c = el.querySelector("code"); return "check-" + slugify((c && c.textContent) || textKey(el, "check")); }, label: function (el) { var c = el.querySelector("code"); return "Check: " + (((c && c.textContent) || "").trim() || headingText(el)); } },
+    ] },
+    conclusions: { panel: "#panel-conclusions", name: "Decisions", regions: [
+      { sel: "[data-narrative-card='conclusion_verdicts']", key: function () { return "verdicts"; }, label: function () { return "Three-track verdict"; } },
+      { sel: ".expert-question-card", key: function (el) { var i = el.querySelector(".expert-question-id"); return "debt-" + slugify((i && i.textContent) || textKey(el, "debt")); }, label: function (el) { var i = el.querySelector(".expert-question-id"); return "Open debt " + (((i && i.textContent) || "").trim() || headingText(el)); } },
+      { sel: ".di-card", key: function (el) { return "implication-" + textKey(el, "implication"); }, label: function (el) { return "Implication: " + (headingText(el) || "card"); } },
+      { sel: ".followup-card", key: function (el) { return "followup-" + textKey(el, "followup"); }, label: function (el) { return "Follow-up: " + (headingText(el) || "study"); } },
+    ] },
+  };
+
+  function defaultStudyConfig() {
+    var slug = studySlug();
+    var groups = [];
+    var regions = [];
+    Object.keys(STUDY_TABS).forEach(function (tab) {
+      var t = STUDY_TABS[tab];
+      groups.push({ id: tab, name: t.name });
+      t.regions.forEach(function (cfg) {
+        regions.push({
+          scope: t.panel,
+          sel: cfg.sel,
+          group: tab,
+          sid: (function (c, tabId) {
+            return function (el) {
+              return "study-" + slugify(slug) + "-" + tabId + "-" + c.key(el);
+            };
+          })(cfg, tab),
+          label: cfg.label,
+        });
+      });
+    });
+    return {
+      context: "study",
+      meta: { investigation: studyInvestigation, study: slug },
+      storeId: "study." + slugify(slug),
+      title: "Feedback on " + slug,
+      allowInvestigationEdit: true,
+      groups: groups,
+      regions: regions,
+      groupSwitch: function (gid) {
+        if (typeof window._setStudyTab === "function") {
+          try { window._setStudyTab(gid); } catch (e) {}
+        }
+      },
+    };
+  }
+
+  var CONFIG = window.__VIVA_FB_CONFIG__ || defaultStudyConfig();
+
+  function metaInvestigation() {
+    return val(CONFIG.meta && CONFIG.meta.investigation) || "";
+  }
+  function metaStudy() {
+    return val(CONFIG.meta && CONFIG.meta.study) || "";
+  }
+  function groupName(gid) {
+    var g = (CONFIG.groups || []).filter(function (x) { return x.id === gid; })[0];
+    return (g && g.name) || gid || "Other";
+  }
+
+  // ── store (localStorage) ──────────────────────────────────────────────────────
+  // Each surface (a study, the report, the SPA investigation view) persists its
+  // own store keyed `viva.fb.store.<ws>.<storeId>`, with meta under
+  // `viva.fb.meta.<ws>.<storeId>`. localStorage is shared across same-origin
+  // frames, so the single shared button AGGREGATES every store in the workspace
+  // — one count, one export ("all at once"), even when a study detail iframe and
+  // the SPA investigation view are on screen together.
+  // FB (this surface) = { sectionId: {note, disposition, label, group, ts} }
+  var FB = {};
+  // Guarantee unique section ids by checking the LIVE DOM — removed/re-rendered
+  // elements don't inflate the suffix, so ids stay stable across re-renders
+  // (only genuine same-view duplicates, e.g. Question + Hypothesis, get a -2).
+  function uniqueSid(sid) {
+    var base = sid, n = 1;
+    while (document.querySelector('[data-fb-sid="' + cssEscape(sid) + '"]')) {
+      n++;
+      sid = base + "-" + n;
+    }
+    return sid;
+  }
+  var STORE_PREFIX = "viva.fb.store.";
+  var META_PREFIX = "viva.fb.meta.";
+  function WS() {
+    return slugify((window.__DASH_CONFIG__ && window.__DASH_CONFIG__.workspace) || "");
+  }
+  function storeId() {
+    return val(CONFIG.storeId) || "x";
+  }
+  function storeKey() {
+    return STORE_PREFIX + WS() + "." + storeId();
+  }
+  function metaKey() {
+    return META_PREFIX + WS() + "." + storeId();
+  }
+  var _loadedKey = null;
+  function loadStore() {
+    _loadedKey = storeKey();
+    try {
+      FB = JSON.parse(localStorage.getItem(_loadedKey) || "{}") || {};
+    } catch (e) {
+      FB = {};
+    }
+  }
+  // The SPA investigation instance is long-lived across investigation switches
+  // (storeId is a function of the current slug) — reload FB when it changes.
+  function ensureStore() {
+    if (storeKey() !== _loadedKey) loadStore();
+  }
+  function persistMeta() {
+    try {
+      localStorage.setItem(metaKey(), JSON.stringify({
+        investigation: metaInvestigation(),
+        study: metaStudy(),
+        title: val(CONFIG.title) || "",
+        context: CONFIG.context || "",
+        noSave: !!CONFIG.noSave,
+        storeId: storeId(),
+      }));
+    } catch (e) {}
+  }
+  function saveStore() {
+    try {
+      localStorage.setItem(storeKey(), JSON.stringify(FB));
+    } catch (e) {}
+    persistMeta();
+    refreshChrome();
+  }
+  function setFB(key, patch) {
+    FB[key] = Object.assign({}, FB[key] || {}, patch);
+    if (!FB[key].note && !FB[key].disposition) delete FB[key];
+    saveStore();
+  }
+  // Aggregate every store for this workspace (investigation first, then studies).
+  function allStores() {
+    var pfx = STORE_PREFIX + WS() + ".";
+    var out = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf(pfx) !== 0) continue;
+        var entries = {};
+        try { entries = JSON.parse(localStorage.getItem(k) || "{}") || {}; } catch (e) { entries = {}; }
+        if (!Object.keys(entries).length) continue;
+        var storeId = k.slice(pfx.length);
+        var meta = {};
+        try { meta = JSON.parse(localStorage.getItem(META_PREFIX + WS() + "." + storeId) || "{}") || {}; } catch (e) {}
+        out.push({ storeId: storeId, meta: meta, entries: entries });
+      }
+    } catch (e) {}
+    out.sort(function (a, b) {
+      var ai = a.meta.context === "investigation" ? 0 : 1;
+      var bi = b.meta.context === "investigation" ? 0 : 1;
+      if (ai !== bi) return ai - bi;
+      return String(a.meta.title || a.storeId).localeCompare(String(b.meta.title || b.storeId));
+    });
+    return out;
+  }
+  function totalCount() {
+    return allStores().reduce(function (n, s) { return n + Object.keys(s.entries).length; }, 0);
+  }
+  function pickInvestigation() {
+    var stores = allStores();
+    for (var i = 0; i < stores.length; i++) if (stores[i].meta.context === "investigation" && stores[i].meta.investigation) return stores[i].meta.investigation;
+    for (var j = 0; j < stores.length; j++) if (stores[j].meta.investigation) return stores[j].meta.investigation;
+    return metaInvestigation();
+  }
+  function anySaveable() {
+    return allStores().some(function (s) { return !s.meta.noSave; });
+  }
+
+  // ── decoration: hover 💬 corners on every region ──────────────────────────────
+  function decorateRegion(el, region) {
+    if (!el || el.__fbDecorated) return;
+    if (el.closest(".fb-corner") || el.closest(".fb-pop") || el.closest("#fb-tray")) return;
+    el.__fbDecorated = true;
+    var sid, label, group;
+    try { sid = region.sid(el); } catch (e) { sid = "x"; }
+    sid = uniqueSid(sid);
+    try { label = region.label(el); } catch (e) { label = ""; }
+    group = typeof region.group === "function" ? region.group(el) : region.group || "";
+    el.classList.add("fb-region");
+    el.setAttribute("data-fb-sid", sid);
+    el.setAttribute("data-fb-label", label || sid);
+    el.setAttribute("data-fb-group", group);
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "fb-corner";
+    btn.setAttribute("data-fb-sid", sid);
+    btn.setAttribute("title", "Leave feedback on: " + (label || sid));
+    btn.setAttribute("aria-label", "Leave feedback on " + (label || sid));
+    btn.textContent = "💬";
+    el.appendChild(btn);
+    markCorner(sid);
+  }
+  function decorateAll() {
+    ensureStore();
+    (CONFIG.regions || []).forEach(function (region) {
+      var roots = region.scope ? document.querySelectorAll(region.scope) : [document];
+      for (var r = 0; r < roots.length; r++) {
+        var nodes = roots[r].querySelectorAll(region.sel);
+        for (var i = 0; i < nodes.length; i++) decorateRegion(nodes[i], region);
+      }
+    });
+  }
+  function markCorner(sid) {
+    var has = !!FB[sid];
+    document.querySelectorAll('.fb-corner[data-fb-sid="' + cssEscape(sid) + '"]').forEach(function (b) {
+      b.classList.toggle("has", has);
+      b.textContent = has ? "📝" : "💬";
+    });
+    var reg = document.querySelector('.fb-region[data-fb-sid="' + cssEscape(sid) + '"]');
+    if (reg) reg.classList.toggle("fb-has", has);
+  }
+
+  // ── inline editor popover ──────────────────────────────────────────────────────
+  var curPop = null;
+  function closePop() {
+    if (curPop) { curPop.remove(); curPop = null; }
+  }
+  function openEditor(sid, label, group, anchorBtn) {
+    closePop();
+    var f = FB[sid] || {};
+    var pop = document.createElement("div");
+    pop.className = "fb-pop";
+    pop.innerHTML =
+      '<div class="fb-pop-h">' + esc(label) + "</div>" +
+      '<div class="fb-disp">' +
+      '<button type="button" data-disp="ok" class="' + (f.disposition === "ok" ? "on-ok" : "") + '">👍 Looks right</button>' +
+      '<button type="button" data-disp="revise" class="' + (f.disposition === "revise" ? "on-rev" : "") + '">✏️ Needs revision</button>' +
+      "</div>" +
+      '<textarea class="fb-note" rows="4" placeholder="Note for the team / AI agent…">' + esc(f.note || "") + "</textarea>" +
+      '<div class="fb-pop-foot">' +
+      '<button type="button" class="fb-clear">Clear</button>' +
+      '<span class="fb-spacer"></span>' +
+      '<button type="button" class="fb-done">Done</button>' +
+      "</div>";
+    document.body.appendChild(pop);
+    curPop = pop;
+    pop._anchor = anchorBtn;
+    positionPop(pop, anchorBtn);
+
+    var ta = pop.querySelector(".fb-note");
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.addEventListener("input", function () {
+      setFB(sid, { note: ta.value, label: label, group: group, ts: f.ts || nowIso() });
+      markCorner(sid);
+    });
+    pop.querySelectorAll(".fb-disp button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var d = b.getAttribute("data-disp");
+        var cur = (FB[sid] || {}).disposition;
+        var nd = cur === d ? null : d;
+        setFB(sid, { disposition: nd, label: label, group: group, ts: (FB[sid] || {}).ts || nowIso() });
+        pop.querySelectorAll(".fb-disp button").forEach(function (x) { x.classList.remove("on-ok", "on-rev"); });
+        if (nd === "ok") pop.querySelector('[data-disp="ok"]').classList.add("on-ok");
+        if (nd === "revise") pop.querySelector('[data-disp="revise"]').classList.add("on-rev");
+        markCorner(sid);
+      });
+    });
+    pop.querySelector(".fb-clear").addEventListener("click", function () {
+      delete FB[sid]; saveStore(); markCorner(sid); closePop();
+    });
+    pop.querySelector(".fb-done").addEventListener("click", closePop);
+  }
+  function positionPop(pop, anchor) {
+    var r = anchor.getBoundingClientRect();
+    var w = 320;
+    var left = Math.max(12, Math.min(r.right - w, window.innerWidth - w - 12));
+    var top = r.bottom + 8;
+    var maxTop = window.innerHeight - pop.offsetHeight - 12;
+    if (top > maxTop) top = Math.max(12, r.top - pop.offsetHeight - 8);
+    pop.style.left = left + "px";
+    pop.style.top = top + window.scrollY + "px";
+  }
+
+  // ── floating button + tray (singleton in the TOP window; aggregates stores) ───
+  function buildChrome() {
+    var TD = topDoc();
+    if (TD.getElementById("fb-fab")) { refreshChrome(); return; } // one shared button
+    var fab = TD.createElement("button");
+    fab.id = "fb-fab";
+    fab.type = "button";
+    fab.title = "Review & export collected feedback";
+    fab.innerHTML = '💬 Feedback <span id="fb-count">0</span>';
+    fab.addEventListener("click", toggleTray);
+    TD.body.appendChild(fab);
+    var tray = TD.createElement("div");
+    tray.id = "fb-tray";
+    tray.hidden = true;
+    TD.body.appendChild(tray);
+    refreshChrome();
+  }
+  function refreshChrome() {
+    var TD = topDoc();
+    var n = totalCount();
+    var fab = TD.getElementById("fb-fab");
+    if (fab) {
+      fab.style.display = n > 0 ? "flex" : "none"; // appears only when there's feedback
+      var c = fab.querySelector("#fb-count");
+      if (c) c.textContent = n;
+    }
+    var tray = TD.getElementById("fb-tray");
+    if (tray) {
+      if (n === 0) tray.hidden = true;
+      if (!tray.hidden) renderTray();
+    }
+  }
+  function toggleTray() {
+    var tray = topDoc().getElementById("fb-tray");
+    if (!tray) return;
+    tray.hidden = !tray.hidden;
+    if (!tray.hidden) renderTray();
+  }
+  function renderTray() {
+    var tray = topDoc().getElementById("fb-tray");
+    if (!tray) return;
+    var stores = allStores();
+
+    var html = '<div class="fb-tray-h"><b>Feedback</b>' +
+      '<button type="button" class="fb-tray-x" title="Close">✕</button></div>';
+    html += '<div class="fb-tray-meta"><label>Reviewer <input id="fb-reviewer" type="text" value="' +
+      esc(reviewerName()) + '" placeholder="your name"></label></div>';
+
+    if (!stores.length) {
+      html += '<div class="fb-tray-empty">No notes yet. Hover any region (a figure, a finding, a tab section…) and click the 💬 in its corner.</div>';
+    } else {
+      html += '<div class="fb-tray-list">';
+      stores.forEach(function (s) {
+        var gtitle = s.meta.title || (s.meta.study ? "Study: " + s.meta.study : s.meta.investigation || s.storeId);
+        html += '<div class="fb-tray-group">' + esc(gtitle) + "</div>";
+        Object.keys(s.entries).sort().forEach(function (sid) {
+          var e = s.entries[sid];
+          var disp = e.disposition === "ok" ? "👍" : e.disposition === "revise" ? "✏️" : "•";
+          html += '<div class="fb-item" data-store="' + esc(s.storeId) + '" data-sid="' + esc(sid) + '">' +
+            '<span class="fb-item-disp">' + disp + "</span>" +
+            '<span class="fb-item-body"><span class="fb-item-label">' + esc(e.region || e.label || sid) + "</span>" +
+            '<span class="fb-item-note">' + esc(e.note != null ? e.note : e.text || "(no note)") + "</span></span>" +
+            '<button type="button" class="fb-item-del" title="Remove">✕</button></div>';
+        });
+      });
+      html += "</div>";
+    }
+
+    html += '<div class="fb-tray-actions">' +
+      '<button type="button" id="fb-export">⬇ Export .yaml</button>' +
+      '<button type="button" id="fb-copy">⧉ Copy</button>' +
+      (!isSnapshot() && anySaveable() ? '<button type="button" id="fb-save" class="primary">⤴ Save to workspace</button>' : "") +
+      "</div>";
+    tray.innerHTML = html;
+
+    tray.querySelector(".fb-tray-x").addEventListener("click", toggleTray);
+    var rev = tray.querySelector("#fb-reviewer");
+    if (rev) rev.addEventListener("input", function () { setReviewerName(rev.value); });
+    tray.querySelectorAll(".fb-item").forEach(function (row) {
+      var sid = row.getAttribute("data-sid");
+      var store = row.getAttribute("data-store");
+      row.querySelector(".fb-item-body").addEventListener("click", function () { jumpTo(store, sid); });
+      row.querySelector(".fb-item-del").addEventListener("click", function (ev) {
+        ev.stopPropagation(); deleteItem(store, sid);
+      });
+    });
+    tray.querySelector("#fb-export").addEventListener("click", exportYaml);
+    tray.querySelector("#fb-copy").addEventListener("click", copyYaml);
+    var saveBtn = tray.querySelector("#fb-save");
+    if (saveBtn) saveBtn.addEventListener("click", saveToWorkspace);
+  }
+  function deleteItem(store, sid) {
+    var key = STORE_PREFIX + WS() + "." + store;
+    try {
+      var o = JSON.parse(localStorage.getItem(key) || "{}") || {};
+      delete o[sid];
+      if (Object.keys(o).length) localStorage.setItem(key, JSON.stringify(o));
+      else localStorage.removeItem(key);
+    } catch (e) {}
+    if (store === (CONFIG.storeId || "x")) delete FB[sid];
+    markCorner(sid);
+    refreshChrome();
+    renderTray();
+  }
+  function jumpTo(store, sid) {
+    // Only this surface's regions are reachable from its own engine instance;
+    // items from another frame/surface simply don't scroll (cross-frame).
+    var reg = document.querySelector('.fb-region[data-fb-sid="' + cssEscape(sid) + '"]');
+    if (!reg) return;
+    var e = FB[sid];
+    if (e && e.group && typeof CONFIG.groupSwitch === "function") CONFIG.groupSwitch(e.group);
+    setTimeout(function () {
+      reg.scrollIntoView({ behavior: "smooth", block: "center" });
+      reg.classList.add("fb-flash");
+      setTimeout(function () { reg.classList.remove("fb-flash"); }, 1400);
+    }, 120);
+  }
+
+  // ── YAML emit (canonical meta + annotations) ──────────────────────────────────
+  function yq(s) {
+    return '"' + String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ") + '"';
+  }
+  function payloadObj() {
+    // Aggregate every store in the workspace into ONE canonical payload. Section
+    // ids are globally unique (study-<slug>-… / investigation-…), so study notes
+    // attribute to their study and investigation notes stay report-level.
+    var author = reviewerName() || "reviewer";
+    var annotations = {};
+    var stores = allStores();
+    stores.forEach(function (s) {
+      Object.keys(s.entries).sort().forEach(function (sid) {
+        var e = s.entries[sid];
+        var entry = { author: author, text: e.note != null ? e.note : e.text || "", ts: e.ts || nowIso() };
+        if (e.disposition) entry.disposition = e.disposition;
+        if (e.region || e.label) entry.region = e.region || e.label;
+        if (e.group) entry.group = e.group;
+        annotations[sid] = [entry];
+      });
+    });
+    var meta = {
+      investigation: pickInvestigation(),
+      reviewer: author,
+      generated_at: nowIso(),
+      source: "workbench-inline-feedback",
+    };
+    // Single study in scope (no investigation store) → keep the study hint.
+    if (stores.length === 1 && stores[0].meta.study) meta.study = stores[0].meta.study;
+    return { meta: meta, annotations: annotations };
+  }
+  function genYaml() {
+    var p = payloadObj();
+    var L = ["meta:"];
+    L.push("  investigation: " + yq(p.meta.investigation));
+    if (p.meta.study) L.push("  study: " + yq(p.meta.study));
+    L.push("  reviewer: " + yq(p.meta.reviewer));
+    L.push("  generated_at: " + yq(p.meta.generated_at));
+    L.push("  source: " + yq(p.meta.source));
+    L.push("annotations:");
+    var keys = Object.keys(p.annotations);
+    if (!keys.length) {
+      L.push("  {}  # no notes — hover a region and click 💬");
+    } else {
+      keys.forEach(function (sid) {
+        var e = p.annotations[sid][0];
+        L.push("  " + sid + ":");
+        L.push("    - author: " + yq(e.author));
+        L.push("      text: " + yq(e.text));
+        L.push("      ts: " + yq(e.ts));
+        if (e.disposition) L.push("      disposition: " + yq(e.disposition));
+        if (e.region) L.push("      region: " + yq(e.region));
+        if (e.group) L.push("      group: " + yq(e.group));
+      });
+    }
+    return L.join("\n") + "\n";
+  }
+  function exportName() {
+    return "feedback-" + slugify(pickInvestigation() || "report") + ".yaml";
+  }
+  function download(name, text) {
+    var TD = topDoc();
+    var blob = new Blob([text], { type: "application/x-yaml" });
+    var url = URL.createObjectURL(blob);
+    var a = TD.createElement("a");
+    a.href = url;
+    a.download = name;
+    TD.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  function toast(msg, ok) {
+    if (window.Toast && typeof window.Toast.show === "function") {
+      window.Toast.show(msg, ok === false ? "error" : "success");
+      return;
+    }
+    var TD = topDoc();
+    var t = TD.createElement("div");
+    t.className = "fb-toast" + (ok === false ? " err" : "");
+    t.textContent = msg;
+    TD.body.appendChild(t);
+    setTimeout(function () { t.classList.add("in"); }, 10);
+    setTimeout(function () { t.classList.remove("in"); setTimeout(function () { t.remove(); }, 300); }, 2600);
+  }
+  function exportYaml() {
+    download(exportName(), genYaml());
+    toast("Feedback YAML downloaded");
+  }
+  function copyYaml() {
+    var y = genYaml();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(y).then(
+        function () { toast("YAML copied to clipboard"); },
+        function () { download(exportName(), y); }
+      );
+    } else {
+      download(exportName(), y);
+    }
+  }
+  function saveToWorkspace(){}
+
+  // ── styles ─────────────────────────────────────────────────────────────────────
+  function injectStyle() {
+    if (document.getElementById("fb-style")) return;
+    var css = [
+      ".fb-region{position:relative;}",
+      ".fb-corner{position:absolute;top:4px;right:4px;z-index:6;width:26px;height:26px;padding:0;border:none;border-radius:7px;",
+      "  background:var(--card,#fff);box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:pointer;font-size:14px;line-height:26px;text-align:center;",
+      "  opacity:0;transform:translateY(-2px);transition:opacity .12s,transform .12s;}",
+      ".fb-region:hover>.fb-corner,.fb-corner:focus{opacity:.92;transform:none;}",
+      ".fb-corner:hover{opacity:1;box-shadow:0 2px 8px rgba(0,0,0,.28);}",
+      ".fb-corner.has{opacity:1;background:#2d6cdf;}",
+      ".fb-region.fb-has{box-shadow:inset 0 0 0 1.5px rgba(45,108,223,.45);border-radius:8px;}",
+      ".fb-region.fb-flash{outline:2px solid #2d6cdf;outline-offset:2px;transition:outline .2s;}",
+      ".fb-pop{position:absolute;z-index:99999;width:320px;max-width:calc(100vw - 24px);background:var(--card,#fff);color:var(--ink,#111);",
+      "  border:1px solid var(--line,#ddd);border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.28);padding:12px;font-size:13px;}",
+      ".fb-pop-h{font-weight:600;margin-bottom:8px;font-size:13px;line-height:1.3;}",
+      ".fb-disp{display:flex;gap:6px;margin-bottom:8px;}",
+      ".fb-disp button{flex:1;padding:6px 4px;border:1px solid var(--line,#ddd);border-radius:7px;background:var(--bg,#f7f7f8);cursor:pointer;font-size:12px;color:var(--ink,#111);}",
+      ".fb-disp button.on-ok{background:#1f9d55;border-color:#1f9d55;color:#fff;}",
+      ".fb-disp button.on-rev{background:#e0a106;border-color:#e0a106;color:#1a1a1a;}",
+      ".fb-note{width:100%;box-sizing:border-box;border:1px solid var(--line,#ddd);border-radius:8px;padding:7px 9px;font:inherit;resize:vertical;background:var(--bg,#fff);color:var(--ink,#111);}",
+      ".fb-pop-foot{display:flex;align-items:center;gap:8px;margin-top:9px;}",
+      ".fb-pop-foot .fb-spacer{flex:1;}",
+      ".fb-pop-foot button{padding:6px 12px;border:1px solid var(--line,#ddd);border-radius:7px;background:var(--bg,#f2f2f4);cursor:pointer;font-size:12px;color:var(--ink,#111);}",
+      ".fb-pop-foot .fb-done{background:#2d6cdf;border-color:#2d6cdf;color:#fff;}",
+      "#fb-fab{position:fixed;right:18px;bottom:18px;z-index:99998;padding:10px 15px;border:none;border-radius:22px;",
+      "  background:#2d6cdf;color:#fff;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(45,108,223,.4);display:none;gap:7px;align-items:center;}",
+      "#fb-fab #fb-count{background:rgba(255,255,255,.26);border-radius:10px;padding:0 7px;min-width:14px;text-align:center;font-size:12px;}",
+      "#fb-tray{position:fixed;right:18px;bottom:66px;z-index:99998;width:360px;max-width:calc(100vw - 24px);max-height:72vh;overflow:auto;",
+      "  background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.3);}",
+      ".fb-tray-h{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line,#eee);position:sticky;top:0;background:var(--card,#fff);}",
+      ".fb-tray-x{border:none;background:none;cursor:pointer;font-size:15px;color:var(--ink-2,#666);}",
+      ".fb-tray-meta{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line,#eee);}",
+      ".fb-tray-meta label{flex:1;font-size:11px;color:var(--ink-2,#666);display:flex;flex-direction:column;gap:3px;}",
+      ".fb-tray-meta input{border:1px solid var(--line,#ddd);border-radius:6px;padding:5px 7px;font:inherit;font-size:12px;background:var(--bg,#fff);color:var(--ink,#111);}",
+      ".fb-tray-list{padding:6px 8px;}",
+      ".fb-tray-group{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2,#888);padding:9px 8px 3px;}",
+      ".fb-item{display:flex;gap:8px;align-items:flex-start;padding:7px 8px;border-radius:8px;cursor:pointer;}",
+      ".fb-item:hover{background:var(--bg,#f5f6f8);}",
+      ".fb-item-disp{font-size:13px;line-height:1.3;}",
+      ".fb-item-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}",
+      ".fb-item-label{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+      ".fb-item-note{font-size:12px;color:var(--ink-2,#666);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}",
+      ".fb-item-del{border:none;background:none;cursor:pointer;color:var(--ink-2,#999);font-size:12px;}",
+      ".fb-tray-actions{display:flex;gap:7px;padding:11px 14px;border-top:1px solid var(--line,#eee);position:sticky;bottom:0;background:var(--card,#fff);flex-wrap:wrap;}",
+      ".fb-tray-actions button{flex:1;min-width:92px;padding:8px 6px;border:1px solid var(--line,#ddd);border-radius:8px;background:var(--bg,#f2f2f4);cursor:pointer;font-size:12px;color:var(--ink,#111);}",
+      ".fb-tray-actions button.primary{background:#2d6cdf;border-color:#2d6cdf;color:#fff;}",
+      ".fb-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);z-index:100000;background:#1f9d55;color:#fff;",
+      "  padding:9px 16px;border-radius:9px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:0;transition:opacity .25s,transform .25s;}",
+      ".fb-toast.in{opacity:1;transform:translateX(-50%) translateY(0);}",
+      ".fb-toast.err{background:#d23f3f;}",
+      "@media print{.fb-corner,#fb-fab,#fb-tray,.fb-pop{display:none !important;}}",
+    ].join("\n");
+    // Inject into this document (regions/corners/popover live here) AND the top
+    // document (where the FAB/tray/toast are mounted when embedded in an iframe).
+    [document, topDoc()].forEach(function (doc) {
+      if (!doc || doc.getElementById("fb-style")) return;
+      var st = doc.createElement("style");
+      st.id = "fb-style";
+      st.textContent = css;
+      (doc.head || doc.documentElement).appendChild(st);
+    });
+  }
+
+  // ── wiring ───────────────────────────────────────────────────────────────────
+  var decorateTimer = null;
+  function scheduleDecorate() {
+    if (decorateTimer) return;
+    decorateTimer = setTimeout(function () { decorateTimer = null; decorateAll(); }, 150);
+  }
+  function init() {
+    if (!CONFIG || !CONFIG.regions || !CONFIG.regions.length) return;
+    // study page gate: only run on an actual study page for the default config
+    if (CONFIG.context === "study" && !document.querySelector("#panel-overview")) return;
+    injectStyle();
+    loadStore();
+    buildChrome();
+    decorateAll();
+    var root =
+      document.querySelector(CONFIG.observeRoot || "main.study-page") ||
+      document.querySelector("#app") ||
+      document.body;
+    new MutationObserver(scheduleDecorate).observe(root, { childList: true, subtree: true });
+
+    document.addEventListener("click", function (ev) {
+      var btn = ev.target.closest(".fb-corner");
+      if (btn) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        var sid = btn.getAttribute("data-fb-sid");
+        var reg = btn.closest(".fb-region");
+        var label = (reg && reg.getAttribute("data-fb-label")) || sid;
+        var group = (reg && reg.getAttribute("data-fb-group")) || "";
+        openEditor(sid, label, group, btn);
+        return;
+      }
+      if (curPop && !ev.target.closest(".fb-pop") && !ev.target.closest(".fb-corner")) closePop();
+    });
+    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") closePop(); });
+    // On resize, REPOSITION the open popover — never close it. The study page
+    // renders in an auto-growing iframe, and focusing the note textarea opens
+    // the mobile keyboard; both fire resize, and closing here made the popover
+    // vanish right after it opened (worse on mobile). Reposition to the anchor
+    // if it's still in the DOM; otherwise leave the popover where it is.
+    var _rzTimer = null;
+    window.addEventListener("resize", function () {
+      if (!curPop || _rzTimer) return;
+      _rzTimer = setTimeout(function () {
+        _rzTimer = null;
+        if (curPop && curPop._anchor && curPop._anchor.isConnected) positionPop(curPop, curPop._anchor);
+      }, 80);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
 
 <footer><div class="wrap">
   <div>Rendered from workspace <span class="mono" id="foot-ws"></span> · deterministic from investigation + study YAML.</div>
@@ -592,7 +1419,7 @@ footer .wrap{display:flex;flex-direction:column;gap:6px}
      rendered inline in this document and uses this single copy (empty when the
      report carries no interactive figure). Must load before the renderer runs. -->
 <script id="plotlyjs"></script>
-<script id="data" type="application/json">{"slug": "legged-locomotion", "title": "Legged Locomotion — a CTRNN Central Pattern Generator (Beer & Gallagher 1992)", "status": "running", "question": "Can a small continuous-time recurrent neural network, coupled to a single\nleg over flat ground, evolve into a central pattern generator that produces\na rhythmic walking gait — a self-sustaining stance/swing cycle that carries\nthe body steadily forward — rather than a one-off lunge?\n", "hypothesis": "A CTRNN evolved to maximize forward travel, with its leg angle fed back as\nproprioception, will settle into a stable limit cycle: it plants the foot and\nswings the leg backward to drive the body forward (stance), lifts and swings\nforward to recover (swing), and repeats. The rhythm is a dynamical attractor\nof the coupled brain-body system, not a scripted sequence — the signature of\na central pattern generator.\n", "lead": "This is the rhythmic-behaviour brain-body-environment model. Unlike the\nchemotaxis and discrimination agents, which react to an external stimulus,\nthe walker must GENERATE its own temporal structure: a periodic motor pattern\nthat persists. The scientific payoff is the CPG limit cycle — a closed loop in\nthe network's state space — and the gait it produces (stride period, duty\nfactor, velocity), read directly off the coupled dynamics.\n", "executive": {"what_is_this": "An evolved 5-neuron CTRNN (one neuron receives the leg-angle proprioceptive\ninput; three motor neurons drive foot up/down, backward-swing and\nforward-swing) driving a single clean-room leg over flat ground. When the\nplanted foot swings backward the body translates forward; when the foot\nlifts the leg swings freely to recover. The genome was evolved by the\nworkspace's own GA and committed; the studies replay it deterministically.\n", "verdict": "Reproduced. The evolved CTRNN is a genuine central pattern generator: it\nwalks forward ~450 units over a 500-step trial with a REGULAR gait — 25\nstrides of period 19.8 ± 0.4 steps, duty factor 0.44 — and its state traces\na clean limit cycle. It never reverses at stride scale (only sub-0.3-unit\ncoasting jitter; net strictly forward). This is rhythmic locomotion from a\nsmall neural dynamical system, exactly the Beer & Gallagher result.\n", "verdict_status": "passed", "verdict_detail": "From the committed seed (CTRNN size 5, pop 80, gen 120, seed 0), verified in\nthe test suite: distance > 200 (achieved 450.7), ≥ 10 foot cycles (achieved\n25), duty factor in the walking band (achieved 0.44), and a regular stride\nperiod (19.8 ± 0.4 steps). Honest scope + tuning: a pure net-distance\nfitness evolves a DEGENERATE single lunge (one plant, then coast — distance\n~21, no stride cycle). An opt-in rhythm-shaped fitness — distance scaled by\nthe number of PRODUCTIVE strides (stance phases that actually advance the\nbody, so marching in place earns nothing) — was needed to evolve a true\nrhythmic gait. Pure distance remains the faithful default; the shaping is the\ndocumented choice that makes a walk learnable.\n", "decisions_needed": [{"question": "Report the single evolved walker (as the paper analyzes one CPG), or sweep leg geometry / omega-gain to map the gaits that evolve?", "context": "Beer & Gallagher analyze one evolved walker's dynamics in depth. A geometry sweep is a documented extension."}]}, "scientific_argument": {"main_claim": "Rhythmic walking here is a dynamical property of the coupled brain-body\nsystem: a small CTRNN, with proprioceptive feedback, settles into a stable\nlimit cycle whose period and phase organize a stance/swing gait — a central\npattern generator, with no clock or scripted step sequence.\n", "evidence_for": ["Walks forward ~450 units over 500 steps, net strictly forward (no stride-scale reversal; figures/walk.gif, test_walker_seed.py).", "A regular gait: 25 strides of period 19.8 ± 0.4 steps, duty factor 0.44 (figures/gait_diagram.png).", "The CTRNN state traces a closed limit cycle — the CPG attractor (figures/cpg_limit_cycle.png).", "The rhythm emerges over evolution (figures/evolution_curves.png): distance and regularity climb across generations."], "evidence_against": ["A pure net-distance fitness does NOT evolve a walk — it finds a single lunge; the rhythmic gait required a rhythm-shaped fitness (documented, opt-in)."], "key_figures": ["figures/walk.gif — the leg stepping and the body advancing (the walk in motion)", "figures/cpg_limit_cycle.png — the CTRNN state's limit cycle (the CPG attractor)", "figures/gait_diagram.png — stance/swing bands + leg angle + body velocity (stride period, duty factor)", "figures/neural_activity.gif — the CPG's firing pattern driving the leg"], "caveats": ["Fitness used an opt-in rhythm-shaping term; pure net distance is the faithful default (and evolves a lunge, not a walk).", "Clean-room leg constants (leg_length 15, angle range ±π/6, friction 0.9, dt 0.1): documented choices matching the Beer walker's structure, not fitted to data.", "A single evolved walker is analyzed, as in the paper; a geometry/gain sweep is a documented extension."]}, "biological_story": "Walking is not a reflex to a stimulus — it is a rhythm an animal makes for\nitself. A leg must push against the ground to drive the body forward, then\nlift and reach ahead to do it again, over and over, in time. Beer & Gallagher\nasked whether the smallest kind of nervous system — a handful of\ncontinuously-interacting neurons — could invent that rhythm on its own when\nevolution rewards getting somewhere. It can. The evolved network here does not\nstep on a metronome; its neurons settle into a self-sustaining cycle, a loop in\ntheir own activity that repeats about every twenty time-steps. On each loop the\nmotor neurons plant the foot and sweep the leg back — the body lurches forward —\nthen lift the foot and sweep forward to set up the next step. Read off the\nnetwork's state, that cycle is a closed ring: the central pattern generator's\nattractor. The leg, the ground, and the little brain together make a walker.\n", "glossary": [{"term": "Central pattern generator (CPG)", "definition": "A neural circuit that produces a rhythmic motor pattern without needing rhythmic input — here, the evolved CTRNN's self-sustaining cycle."}, {"term": "Limit cycle", "definition": "A closed, attracting loop in a dynamical system's state space — the mathematical form of a stable rhythm."}, {"term": "Stance / swing", "definition": "Stance: foot planted, leg driving the body forward. Swing: foot lifted, leg recovering forward for the next step."}, {"term": "Duty factor", "definition": "The fraction of a stride the foot is on the ground (in stance). ~0.5 means stance and swing take about equal time."}, {"term": "Stride period", "definition": "The number of time-steps between successive foot-plant onsets — the gait's cycle length."}, {"term": "Proprioception", "definition": "The agent's sense of its own leg angle, fed back to the CTRNN so the CPG can be sensory-entrained."}], "guidelines": null, "how_to_read": null, "created": "2026-10-04", "key_claims": null, "competing_frameworks": [{"name": "Scripted / clocked motor sequence", "relation": "contrasts-with — here the rhythm is a dynamical limit cycle, not a timed script"}], "at_a_glance": [{"study": "walk-forward", "role": "the agent walks steadily forward (distance + monotone progress)"}, {"study": "cpg-limit-cycle", "role": "the CPG's rhythmic dynamics: the CTRNN state's limit cycle"}, {"study": "gait-and-velocity", "role": "the gait quantified: stride period, duty factor, mean velocity"}], "acceptance_criteria": [{"study": "walk-forward", "behavior": "walks-forward-rhythmically"}, {"study": "cpg-limit-cycle", "behavior": "ctrnn-state-traces-limit-cycle"}, {"study": "gait-and-velocity", "behavior": "regular-stride-and-duty"}], "spine": {"verdict_dag": {"nodes": [{"slug": "walk-forward", "title": "The Walker Walks Forward", "verdict": "not_started", "counts": {"passed": 0, "skipped": 0, "failed": 0}, "depth": 0}, {"slug": "cpg-limit-cycle", "title": "The CPG's Limit Cycle", "verdict": "not_started", "counts": {"passed": 0, "skipped": 0, "failed": 0}, "depth": 0}, {"slug": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity", "verdict": "not_started", "counts": {"passed": 0, "skipped": 0, "failed": 0}, "depth": 0}], "edges": []}, "acceptance": {"verdict_status": "in-progress", "criteria": [{"study": "walk-forward", "behavior": "walks-forward-rhythmically", "result": "in-progress"}, {"study": "cpg-limit-cycle", "behavior": "ctrnn-state-traces-limit-cycle", "result": "in-progress"}, {"study": "gait-and-velocity", "behavior": "regular-stride-and-duty", "result": "in-progress"}], "unmet": [{"study": "walk-forward", "behavior": "walks-forward-rhythmically", "result": "in-progress"}, {"study": "cpg-limit-cycle", "behavior": "ctrnn-state-traces-limit-cycle", "result": "in-progress"}, {"study": "gait-and-velocity", "behavior": "regular-stride-and-duty", "result": "in-progress"}]}, "ac_matrix": {"investigation": "legged-locomotion", "verdict_status": "in-progress", "criteria": [{"behavior": "walks-forward-rhythmically", "study": "walk-forward", "result": "in-progress", "status": null, "covered_by": ["walk-forward"], "gap": false}, {"behavior": "ctrnn-state-traces-limit-cycle", "study": "cpg-limit-cycle", "result": "in-progress", "status": null, "covered_by": ["cpg-limit-cycle"], "gap": false}, {"behavior": "regular-stride-and-duty", "study": "gait-and-velocity", "result": "in-progress", "status": null, "covered_by": ["gait-and-velocity"], "gap": false}], "gaps": []}, "plan_board": []}, "discovery": {"closed": false, "frontier_size": 7, "closure_blocking": 3, "next_action": {"op": "branch", "kind": "unaddressed_criterion", "target": "cpg-limit-cycle"}, "opportunities": [{"source": "cpg-limit-cycle", "action": "branch", "score": 0.35, "impact": 0.0, "enable": 0.0, "question": "acceptance criterion 'ctrnn-state-traces-limit-cycle' on cpg-limit-cycle not met (behavior: PENDING, verdict: unassessed)"}, {"source": "gait-and-velocity", "action": "branch", "score": 0.35, "impact": 0.0, "enable": 0.0, "question": "acceptance criterion 'regular-stride-and-duty' on gait-and-velocity not met (behavior: PENDING, verdict: unassessed)"}, {"source": "walk-forward", "action": "branch", "score": 0.35, "impact": 0.0, "enable": 0.0, "question": "acceptance criterion 'walks-forward-rhythmically' on walk-forward not met (behavior: PENDING, verdict: unassessed)"}, {"source": "claim:cpg-limit-cycle", "action": "test", "score": 0.12, "impact": 0.0, "enable": 0.0, "question": "The evolved CTRNN's state traces a clean closed loop in its activity space — a\nlimit cycle — repeating once per stride (~19.8 steps). The rhythm is a\nself-sustaining attractor, not a clocked or scripted sequence.\n"}, {"source": "claim:gait-and-velocity", "action": "test", "score": 0.12, "impact": 0.0, "enable": 0.0, "question": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the\nperiod), duty factor 0.44 (stance and swing nearly balanced), mean body\nvelocity ~9.0 units/time (~0.9 units/step).\n"}, {"source": "claim:walk-forward", "action": "test", "score": 0.12, "impact": 0.0, "enable": 0.0, "question": "The evolved walker travels ~450 units over a 500-step trial and never\nreverses, taking 25 regular steps — a sustained forward walk, not a one-off\nlunge (which a pure-distance fitness produces, reaching only ~21).\n"}, {"source": "Report the single evolved walker (as the paper analyzes one CPG), or sweep leg geometry / omega-gain to map the gaits that evolve?", "action": "steer", "score": 0.06, "impact": 0.0, "enable": 0.0, "question": "Report the single evolved walker (as the paper analyzes one CPG), or sweep leg geometry / omega-gain to map the gaits that evolve?"}], "diagnosis": {"flags": ["planner_limited", "argument_disconnected"], "validator_pass_rate": null}, "execution_plan": [{"source": "cpg-limit-cycle", "action": "branch", "score": 0.35, "consequence": "simulation+study", "command": "viva-study seed-from-followup \u003cparent> \u003cproposal>; vivarium-workbench run study cpg-limit-cycle --workspace \u003cws>"}, {"source": "gait-and-velocity", "action": "branch", "score": 0.35, "consequence": "simulation+study", "command": "viva-study seed-from-followup \u003cparent> \u003cproposal>; vivarium-workbench run study gait-and-velocity --workspace \u003cws>"}, {"source": "walk-forward", "action": "branch", "score": 0.35, "consequence": "simulation+study", "command": "viva-study seed-from-followup \u003cparent> \u003cproposal>; vivarium-workbench run study walk-forward --workspace \u003cws>"}, {"source": "claim:cpg-limit-cycle", "action": "test", "score": 0.12, "consequence": "simulation", "command": "vivarium-workbench run study cpg-limit-cycle --workspace \u003cws>"}, {"source": "claim:gait-and-velocity", "action": "test", "score": 0.12, "consequence": "simulation", "command": "vivarium-workbench run study gait-and-velocity --workspace \u003cws>"}, {"source": "claim:walk-forward", "action": "test", "score": 0.12, "consequence": "simulation", "command": "vivarium-workbench run study walk-forward --workspace \u003cws>"}, {"source": "Report the single evolved walker (as the paper analyzes one CPG), or sweep leg geometry / omega-gain to map the gaits that evolve?", "action": "steer", "score": 0.06, "consequence": "human-only", "command": null}], "suggestions": [{"id": "discriminate-323e6977", "parent": null, "status": "awaiting_expert", "needs": "The evolved walker travels ~450 units over a 500-step trial and never\nreverses, taking 25 regular steps — a sustained forward walk, not a one-off\nlunge (which a pure-distance fitness produces, reaching only ~21)."}, {"id": "discriminate-10ed03a7", "parent": null, "status": "awaiting_expert", "needs": "The evolved CTRNN's state traces a clean closed loop in its activity space — a\nlimit cycle — repeating once per stride (~19.8 steps). The rhythm is a\nself-sustaining attractor, not a clocked or scripted sequence."}, {"id": "discriminate-f590a57d", "parent": null, "status": "awaiting_expert", "needs": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the\nperiod), duty factor 0.44 (stance and swing nearly balanced), mean body\nvelocity ~9.0 units/time (~0.9 units/step)."}], "validator_census": {"failed": 3, "passed": 1}, "drift": {"divergences": 0, "stale_validations": 0}}, "synthesis": {"studies_index": [{"slug": "walk-forward", "title": "The Walker Walks Forward", "stage": "walk-forward", "run_status": "ran", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "The evolved walker travels ~450 units over a 500-step trial and never reverses, taking 25 regular steps — a sustained forward walk, not a one-off lunge (which a pure-distance fitness produces, reaching only ~21)."}, {"slug": "cpg-limit-cycle", "title": "The CPG's Limit Cycle", "stage": "cpg-limit-cycle", "run_status": "ran", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "The evolved CTRNN's state traces a clean closed loop in its activity space — a limit cycle — repeating once per stride (~19.8 steps)."}, {"slug": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity", "stage": "gait-and-velocity", "run_status": "ran", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the period), duty factor 0.44 (stance and swing nearly balanced), mean body velocity ~9.0 units/time (~0.9 units/step)."}], "stages": [{"key": "cpg-limit-cycle", "label": "The CPG's Limit Cycle", "studies": [{"slug": "cpg-limit-cycle", "title": "The CPG's Limit Cycle", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "The evolved CTRNN's state traces a clean closed loop in its activity space — a limit cycle — repeating once per stride (~19.8 steps).", "run_status": "ran"}], "model_dependence": false, "findings": [{"study": "cpg-limit-cycle", "title": "The CPG's Limit Cycle", "grade": "supported", "status": null, "statement": "The CTRNN state settles onto a closed limit cycle repeating once per stride — the CPG attractor.", "observed": null, "units": null}]}, {"key": "gait-and-velocity", "label": "Gait Quantified — Stride, Duty, Velocity", "studies": [{"slug": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the period), duty factor 0.44 (stance and swing nearly balanced), mean body velocity ~9.0 units/time (~0.9 units/step).", "run_status": "ran"}], "model_dependence": false, "findings": [{"study": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity", "grade": "supported", "status": null, "statement": "Stride period 19.8 ± 0.4 steps, duty factor 0.44, mean velocity ~9.0 — a regular, balanced gait.", "observed": null, "units": null}]}, {"key": "walk-forward", "label": "The Walker Walks Forward", "studies": [{"slug": "walk-forward", "title": "The Walker Walks Forward", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "The evolved walker travels ~450 units over a 500-step trial and never reverses, taking 25 regular steps — a sustained forward walk, not a one-off lunge (which a pure-distance fitness produces, reaching only ~21).", "run_status": "ran"}], "model_dependence": false, "findings": [{"study": "walk-forward", "title": "The Walker Walks Forward", "grade": "supported", "status": null, "statement": "Walks ~450 units in 500 steps with 25 steps; net strictly forward (sub-0.3-unit coasting jitter only); a pure-distance fitness instead evolves a single ~21-unit lunge.", "observed": null, "units": null}]}], "claim_evidence": [{"claim": "The evolved walker travels ~450 units over a 500-step trial and never reverses, taking 25 regular steps — a sustained forward walk, not a one-off lunge (which a pure-distance fitness produces, reaching only ~21).", "status": "supported", "grade": "supported", "study": "walk-forward", "study_title": "The Walker Walks Forward"}, {"claim": "The evolved CTRNN's state traces a clean closed loop in its activity space — a limit cycle — repeating once per stride (~19.8 steps).", "status": "supported", "grade": "supported", "study": "cpg-limit-cycle", "study_title": "The CPG's Limit Cycle"}, {"claim": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the period), duty factor 0.44 (stance and swing nearly balanced), mean body velocity ~9.0 units/time (~0.9 units/step).", "status": "supported", "grade": "supported", "study": "gait-and-velocity", "study_title": "Gait Quantified — Stride, Duty, Velocity"}], "contradictions": [{"kind": "competing-framework", "topic": "Scripted / clocked motor sequence", "detail": "contrasts-with — here the rhythm is a dynamical limit cycle, not a timed script", "studies": []}], "continuity": {"edges": [], "external_inputs": [{"slug": "walk-forward", "title": "The Walker Walks Forward"}, {"slug": "cpg-limit-cycle", "title": "The CPG's Limit Cycle"}, {"slug": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity"}]}, "quantitative": [], "roadmap": [], "figures_ranked": [], "headline": [], "counts": {"total": 3, "supported": 3, "qualified": 0, "refuted": 0, "planned": 0}, "validation": {"investigation": "legged-locomotion", "items": [], "summary": {"by_severity": {"high": 0, "medium": 0, "low": 0}, "by_kind": {}, "total": 0, "member_count": 3, "ac_total": 3, "ac_covered": 3}, "checks": [{"kind": "uncovered_ac", "label": "Acceptance criteria covered", "mode": "coverage", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "unresolved_composite", "label": "Composites resolve in the registry", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "verdict_divergence", "label": "Verdicts match the authored gate", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "hard_gate", "label": "Hard gates passing", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "test_regression", "label": "No behavior-test regressions", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "diagnostic_branch_needed", "label": "Failed verdicts have a diagnostic study", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "invariant_regression", "label": "No invariant regressions", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "open_feedback", "label": "Expert feedback addressed", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "param_drift", "label": "No parameter drift", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "unregistered_confirmatory", "label": "Confirmatory studies registered", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "stale_finding", "label": "No stale findings", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "env_stale", "label": "Run environments current", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "nondeterministic", "label": "Runs reproducible", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}], "report_lint": [{"study": "action-switching", "check": "investigation_missing_adversarial", "severity": "warning", "message": "Investigation has no adversarial / ablation member study — a system that should FAIL the same gates (negative control / vent-specificity) or a feature ablation that removes a mechanism and shows the claim break. Add one (study `kind: adversarial` or `kind: ablation`), or opt out with `adversarial_coverage_skip: true` + a reason. A campaign that only passes is weak evidence.", "field_path": "studies"}, {"study": "active-categorical-perception", "check": "investigation_missing_adversarial", "severity": "warning", "message": "Investigation has no adversarial / ablation member study — a system that should FAIL the same gates (negative control / vent-specificity) or a feature ablation that removes a mechanism and shows the claim break. Add one (study `kind: adversarial` or `kind: ablation`), or opt out with `adversarial_coverage_skip: true` + a reason. A campaign that only passes is weak evidence.", "field_path": "studies"}, {"study": "ctrnn-parameter-space", "check": "investigation_missing_adversarial", "severity": "warning", "message": "Investigation has no adversarial / ablation member study — a system that should FAIL the same gates (negative control / vent-specificity) or a feature ablation that removes a mechanism and shows the claim break. Add one (study `kind: adversarial` or `kind: ablation`), or opt out with `adversarial_coverage_skip: true` + a reason. A campaign that only passes is weak evidence.", "field_path": "studies"}, {"study": "legged-locomotion", "check": "investigation_missing_adversarial", "severity": "warning", "message": "Investigation has no adversarial / ablation member study — a system that should FAIL the same gates (negative control / vent-specificity) or a feature ablation that removes a mechanism and shows the claim break. Add one (study `kind: adversarial` or `kind: ablation`), or opt out with `adversarial_coverage_skip: true` + a reason. A campaign that only passes is weak evidence.", "field_path": "studies"}, {"study": "relational-categorization", "check": "investigation_missing_adversarial", "severity": "warning", "message": "Investigation has no adversarial / ablation member study — a system that should FAIL the same gates (negative control / vent-specificity) or a feature ablation that removes a mechanism and shows the claim break. Add one (study `kind: adversarial` or `kind: ablation`), or opt out with `adversarial_coverage_skip: true` + a reason. A campaign that only passes is weak evidence.", "field_path": "studies"}]}}, "references": {}, "inv_references": null, "catalog": null, "workspace": "viva-bbe-systems", "provenance": "investigations/legged-locomotion/investigation.yaml · studies/*/study.yaml · loop-trajectory JSON", "studies": [{"title": "The Walker Walks Forward", "confidence": "Accepted", "question": "Does the evolved CTRNN drive the leg so the body travels steadily forward,\nwith a repeating step cycle rather than a single lunge?\n", "claim": "The evolved walker travels ~450 units over a 500-step trial and never\nreverses, taking 25 regular steps — a sustained forward walk, not a one-off\nlunge (which a pure-distance fitness produces, reaching only ~21).\n", "baseline": [{"name": "walker-bbe", "composite": "viva_bbe_systems.composites.walker", "params": {}}], "runs": [], "findings": [{"summary": "Walks ~450 units in 500 steps with 25 steps; net strictly forward (sub-0.3-unit coasting jitter only); a pure-distance fitness instead evolves a single ~21-unit lunge.", "detail": "figures/walk.gif shows the leg planting and swinging as the body advances\nacross the ground; figures/gait_diagram.png shows the stance/swing bands and\nthe steadily rising body position/velocity.\n"}], "status": "ran", "slug": "walk-forward", "execution_status": "completed", "baseline_composite": "viva_bbe_systems.composites.walker", "tests_counts": {"passed": 0, "skipped": 0, "failed": 0}, "model_topology": {"processes": [{"name": "brain", "kind": "process", "address": "local:CTRNNProcess", "inputs": ["sensory_input"], "outputs": ["motor_output", "neuron_outputs", "neuron_states"], "doc": "", "compartments": []}, {"name": "body", "kind": "process", "address": "local:WalkerBodyProcess", "inputs": ["motor_output"], "outputs": ["sensory_input", "body_x", "foot_down", "leg_angle", "body_vx"], "doc": "", "compartments": []}], "stores": [], "edges": [], "composite": "viva_bbe_systems.composites.walker"}, "verdict": "not_started", "verdict_counts": {"passed": 0, "skipped": 0, "failed": 0}, "run_commands": {"baseline": "vwb run study walk-forward", "variants": [], "simulations": [], "rerun_hint": "vwb rerun \u003crun-id>"}}, {"title": "The CPG's Limit Cycle", "confidence": "Accepted", "question": "Is the walking rhythm a dynamical attractor of the CTRNN — does the network's\nstate trace a stable closed loop (a limit cycle), the signature of a central\npattern generator?\n", "claim": "The evolved CTRNN's state traces a clean closed loop in its activity space — a\nlimit cycle — repeating once per stride (~19.8 steps). The rhythm is a\nself-sustaining attractor, not a clocked or scripted sequence.\n", "baseline": [{"name": "walker-bbe", "composite": "viva_bbe_systems.composites.walker", "params": {}}], "runs": [], "findings": [{"summary": "The CTRNN state settles onto a closed limit cycle repeating once per stride — the CPG attractor.", "detail": "figures/cpg_limit_cycle.png shows the phase portrait (a closed loop);\nfigures/neural_activity.gif shows the node-ring activations and the regular\ntime raster driving the leg.\n"}], "status": "ran", "slug": "cpg-limit-cycle", "execution_status": "completed", "baseline_composite": "viva_bbe_systems.composites.walker", "tests_counts": {"passed": 0, "skipped": 0, "failed": 0}, "model_topology": {"processes": [{"name": "brain", "kind": "process", "address": "local:CTRNNProcess", "inputs": ["sensory_input"], "outputs": ["motor_output", "neuron_outputs", "neuron_states"], "doc": "", "compartments": []}, {"name": "body", "kind": "process", "address": "local:WalkerBodyProcess", "inputs": ["motor_output"], "outputs": ["sensory_input", "body_x", "foot_down", "leg_angle", "body_vx"], "doc": "", "compartments": []}], "stores": [], "edges": [], "composite": "viva_bbe_systems.composites.walker"}, "verdict": "not_started", "verdict_counts": {"passed": 0, "skipped": 0, "failed": 0}, "run_commands": {"baseline": "vwb run study cpg-limit-cycle", "variants": [], "simulations": [], "rerun_hint": "vwb rerun \u003crun-id>"}}, {"title": "Gait Quantified — Stride, Duty, Velocity", "confidence": "Accepted", "question": "What gait does the evolved walker produce — how regular is its stride, how is\nstance/swing balanced, and how fast does the body move?\n", "claim": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the\nperiod), duty factor 0.44 (stance and swing nearly balanced), mean body\nvelocity ~9.0 units/time (~0.9 units/step).\n", "baseline": [{"name": "walker-bbe", "composite": "viva_bbe_systems.composites.walker", "params": {}}], "runs": [], "findings": [{"summary": "Stride period 19.8 ± 0.4 steps, duty factor 0.44, mean velocity ~9.0 — a regular, balanced gait.", "detail": "figures/gait_diagram.png annotates the measured stride period and duty\nfactor on the stance/swing bands; figures/cpg_limit_cycle.png shows the\nunderlying regularity in the CTRNN state.\n"}], "status": "ran", "slug": "gait-and-velocity", "execution_status": "completed", "baseline_composite": "viva_bbe_systems.composites.walker", "tests_counts": {"passed": 0, "skipped": 0, "failed": 0}, "model_topology": {"processes": [{"name": "brain", "kind": "process", "address": "local:CTRNNProcess", "inputs": ["sensory_input"], "outputs": ["motor_output", "neuron_outputs", "neuron_states"], "doc": "", "compartments": []}, {"name": "body", "kind": "process", "address": "local:WalkerBodyProcess", "inputs": ["motor_output"], "outputs": ["sensory_input", "body_x", "foot_down", "leg_angle", "body_vx"], "doc": "", "compartments": []}], "stores": [], "edges": [], "composite": "viva_bbe_systems.composites.walker"}, "verdict": "not_started", "verdict_counts": {"passed": 0, "skipped": 0, "failed": 0}, "run_commands": {"baseline": "vwb run study gait-and-velocity", "variants": [], "simulations": [], "rerun_hint": "vwb rerun \u003crun-id>"}}], "loom_embed": {"loom": "../bigraph-loom/index.html", "state": "../api/composite-state/"}}</script>
+<script id="data" type="application/json">{"slug": "legged-locomotion", "title": "Legged Locomotion — a CTRNN Central Pattern Generator (Beer & Gallagher 1992)", "status": "running", "question": "Can a small continuous-time recurrent neural network, coupled to a single\nleg over flat ground, evolve into a central pattern generator that produces\na rhythmic walking gait — a self-sustaining stance/swing cycle that carries\nthe body steadily forward — rather than a one-off lunge?\n", "hypothesis": "A CTRNN evolved to maximize forward travel, with its leg angle fed back as\nproprioception, will settle into a stable limit cycle: it plants the foot and\nswings the leg backward to drive the body forward (stance), lifts and swings\nforward to recover (swing), and repeats. The rhythm is a dynamical attractor\nof the coupled brain-body system, not a scripted sequence — the signature of\na central pattern generator.\n", "lead": "This is the rhythmic-behaviour brain-body-environment model. Unlike the\nchemotaxis and discrimination agents, which react to an external stimulus,\nthe walker must GENERATE its own temporal structure: a periodic motor pattern\nthat persists. The scientific payoff is the CPG limit cycle — a closed loop in\nthe network's state space — and the gait it produces (stride period, duty\nfactor, velocity), read directly off the coupled dynamics.\n", "executive": {"what_is_this": "An evolved 5-neuron CTRNN (one neuron receives the leg-angle proprioceptive\ninput; three motor neurons drive foot up/down, backward-swing and\nforward-swing) driving a single clean-room leg over flat ground. When the\nplanted foot swings backward the body translates forward; when the foot\nlifts the leg swings freely to recover. The genome was evolved by the\nworkspace's own GA and committed; the studies replay it deterministically.\n", "verdict": "Reproduced. The evolved CTRNN is a genuine central pattern generator: it\nwalks forward ~450 units over a 500-step trial with a REGULAR gait — 25\nstrides of period 19.8 ± 0.4 steps, duty factor 0.44 — and its state traces\na clean limit cycle. It never reverses at stride scale (only sub-0.3-unit\ncoasting jitter; net strictly forward). This is rhythmic locomotion from a\nsmall neural dynamical system, exactly the Beer & Gallagher result.\n", "verdict_status": "passed", "verdict_detail": "From the committed seed (CTRNN size 5, pop 80, gen 120, seed 0), verified in\nthe test suite: distance > 200 (achieved 450.7), ≥ 10 foot cycles (achieved\n25), duty factor in the walking band (achieved 0.44), and a regular stride\nperiod (19.8 ± 0.4 steps). Honest scope + tuning: a pure net-distance\nfitness evolves a DEGENERATE single lunge (one plant, then coast — distance\n~21, no stride cycle). An opt-in rhythm-shaped fitness — distance scaled by\nthe number of PRODUCTIVE strides (stance phases that actually advance the\nbody, so marching in place earns nothing) — was needed to evolve a true\nrhythmic gait. Pure distance remains the faithful default; the shaping is the\ndocumented choice that makes a walk learnable.\n", "decisions_needed": [{"question": "Report the single evolved walker (as the paper analyzes one CPG), or sweep leg geometry / omega-gain to map the gaits that evolve?", "context": "Beer & Gallagher analyze one evolved walker's dynamics in depth. A geometry sweep is a documented extension."}]}, "scientific_argument": {"main_claim": "Rhythmic walking here is a dynamical property of the coupled brain-body\nsystem: a small CTRNN, with proprioceptive feedback, settles into a stable\nlimit cycle whose period and phase organize a stance/swing gait — a central\npattern generator, with no clock or scripted step sequence.\n", "evidence_for": ["Walks forward ~450 units over 500 steps, net strictly forward (no stride-scale reversal; figures/walk.gif, test_walker_seed.py).", "A regular gait: 25 strides of period 19.8 ± 0.4 steps, duty factor 0.44 (figures/gait_diagram.png).", "The CTRNN state traces a closed limit cycle — the CPG attractor (figures/cpg_limit_cycle.png).", "The rhythm emerges over evolution (figures/evolution_curves.png): distance and regularity climb across generations."], "evidence_against": ["A pure net-distance fitness does NOT evolve a walk — it finds a single lunge; the rhythmic gait required a rhythm-shaped fitness (documented, opt-in)."], "key_figures": ["figures/walk.gif — the leg stepping and the body advancing (the walk in motion)", "figures/cpg_limit_cycle.png — the CTRNN state's limit cycle (the CPG attractor)", "figures/gait_diagram.png — stance/swing bands + leg angle + body velocity (stride period, duty factor)", "figures/neural_activity.gif — the CPG's firing pattern driving the leg"], "caveats": ["Fitness used an opt-in rhythm-shaping term; pure net distance is the faithful default (and evolves a lunge, not a walk).", "Clean-room leg constants (leg_length 15, angle range ±π/6, friction 0.9, dt 0.1): documented choices matching the Beer walker's structure, not fitted to data.", "A single evolved walker is analyzed, as in the paper; a geometry/gain sweep is a documented extension."]}, "biological_story": "Walking is not a reflex to a stimulus — it is a rhythm an animal makes for\nitself. A leg must push against the ground to drive the body forward, then\nlift and reach ahead to do it again, over and over, in time. Beer & Gallagher\nasked whether the smallest kind of nervous system — a handful of\ncontinuously-interacting neurons — could invent that rhythm on its own when\nevolution rewards getting somewhere. It can. The evolved network here does not\nstep on a metronome; its neurons settle into a self-sustaining cycle, a loop in\ntheir own activity that repeats about every twenty time-steps. On each loop the\nmotor neurons plant the foot and sweep the leg back — the body lurches forward —\nthen lift the foot and sweep forward to set up the next step. Read off the\nnetwork's state, that cycle is a closed ring: the central pattern generator's\nattractor. The leg, the ground, and the little brain together make a walker.\n", "glossary": [{"term": "Central pattern generator (CPG)", "definition": "A neural circuit that produces a rhythmic motor pattern without needing rhythmic input — here, the evolved CTRNN's self-sustaining cycle."}, {"term": "Limit cycle", "definition": "A closed, attracting loop in a dynamical system's state space — the mathematical form of a stable rhythm."}, {"term": "Stance / swing", "definition": "Stance: foot planted, leg driving the body forward. Swing: foot lifted, leg recovering forward for the next step."}, {"term": "Duty factor", "definition": "The fraction of a stride the foot is on the ground (in stance). ~0.5 means stance and swing take about equal time."}, {"term": "Stride period", "definition": "The number of time-steps between successive foot-plant onsets — the gait's cycle length."}, {"term": "Proprioception", "definition": "The agent's sense of its own leg angle, fed back to the CTRNN so the CPG can be sensory-entrained."}], "guidelines": null, "how_to_read": null, "created": "2026-10-04", "key_claims": null, "competing_frameworks": [{"name": "Scripted / clocked motor sequence", "relation": "contrasts-with — here the rhythm is a dynamical limit cycle, not a timed script"}], "at_a_glance": [{"study": "walk-forward", "role": "the agent walks steadily forward (distance + monotone progress)"}, {"study": "cpg-limit-cycle", "role": "the CPG's rhythmic dynamics: the CTRNN state's limit cycle"}, {"study": "gait-and-velocity", "role": "the gait quantified: stride period, duty factor, mean velocity"}], "acceptance_criteria": [{"study": "walk-forward", "behavior": "walks-forward-rhythmically"}, {"study": "cpg-limit-cycle", "behavior": "ctrnn-state-traces-limit-cycle"}, {"study": "gait-and-velocity", "behavior": "regular-stride-and-duty"}], "spine": {"verdict_dag": {"nodes": [{"slug": "walk-forward", "title": "The Walker Walks Forward", "verdict": "not_started", "counts": {"passed": 0, "skipped": 0, "failed": 0}, "depth": 0}, {"slug": "cpg-limit-cycle", "title": "The CPG's Limit Cycle", "verdict": "not_started", "counts": {"passed": 0, "skipped": 0, "failed": 0}, "depth": 0}, {"slug": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity", "verdict": "not_started", "counts": {"passed": 0, "skipped": 0, "failed": 0}, "depth": 0}], "edges": []}, "acceptance": {"verdict_status": "in-progress", "criteria": [{"study": "walk-forward", "behavior": "walks-forward-rhythmically", "result": "in-progress"}, {"study": "cpg-limit-cycle", "behavior": "ctrnn-state-traces-limit-cycle", "result": "in-progress"}, {"study": "gait-and-velocity", "behavior": "regular-stride-and-duty", "result": "in-progress"}], "unmet": [{"study": "walk-forward", "behavior": "walks-forward-rhythmically", "result": "in-progress"}, {"study": "cpg-limit-cycle", "behavior": "ctrnn-state-traces-limit-cycle", "result": "in-progress"}, {"study": "gait-and-velocity", "behavior": "regular-stride-and-duty", "result": "in-progress"}], "freshness": null}, "ac_matrix": {"investigation": "legged-locomotion", "verdict_status": "in-progress", "criteria": [{"behavior": "walks-forward-rhythmically", "study": "walk-forward", "result": "in-progress", "status": null, "covered_by": ["walk-forward"], "gap": false}, {"behavior": "ctrnn-state-traces-limit-cycle", "study": "cpg-limit-cycle", "result": "in-progress", "status": null, "covered_by": ["cpg-limit-cycle"], "gap": false}, {"behavior": "regular-stride-and-duty", "study": "gait-and-velocity", "result": "in-progress", "status": null, "covered_by": ["gait-and-velocity"], "gap": false}], "gaps": []}, "plan_board": []}, "discovery": {"closed": false, "frontier_size": 7, "closure_blocking": 3, "next_action": {"op": "branch", "kind": "unaddressed_criterion", "target": "cpg-limit-cycle"}, "opportunities": [{"source": "cpg-limit-cycle", "action": "branch", "score": 0.35, "impact": 0.0, "enable": 0.0, "question": "acceptance criterion 'ctrnn-state-traces-limit-cycle' on cpg-limit-cycle not met (behavior: PENDING, verdict: unassessed)"}, {"source": "gait-and-velocity", "action": "branch", "score": 0.35, "impact": 0.0, "enable": 0.0, "question": "acceptance criterion 'regular-stride-and-duty' on gait-and-velocity not met (behavior: PENDING, verdict: unassessed)"}, {"source": "walk-forward", "action": "branch", "score": 0.35, "impact": 0.0, "enable": 0.0, "question": "acceptance criterion 'walks-forward-rhythmically' on walk-forward not met (behavior: PENDING, verdict: unassessed)"}, {"source": "claim:cpg-limit-cycle", "action": "test", "score": 0.12, "impact": 0.0, "enable": 0.0, "question": "The evolved CTRNN's state traces a clean closed loop in its activity space — a\nlimit cycle — repeating once per stride (~19.8 steps). The rhythm is a\nself-sustaining attractor, not a clocked or scripted sequence.\n"}, {"source": "claim:gait-and-velocity", "action": "test", "score": 0.12, "impact": 0.0, "enable": 0.0, "question": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the\nperiod), duty factor 0.44 (stance and swing nearly balanced), mean body\nvelocity ~9.0 units/time (~0.9 units/step).\n"}, {"source": "claim:walk-forward", "action": "test", "score": 0.12, "impact": 0.0, "enable": 0.0, "question": "The evolved walker travels ~450 units over a 500-step trial and never\nreverses, taking 25 regular steps — a sustained forward walk, not a one-off\nlunge (which a pure-distance fitness produces, reaching only ~21).\n"}, {"source": "Report the single evolved walker (as the paper analyzes one CPG), or sweep leg geometry / omega-gain to map the gaits that evolve?", "action": "steer", "score": 0.06, "impact": 0.0, "enable": 0.0, "question": "Report the single evolved walker (as the paper analyzes one CPG), or sweep leg geometry / omega-gain to map the gaits that evolve?"}], "diagnosis": {"flags": ["planner_limited", "argument_disconnected"], "validator_pass_rate": null}, "execution_plan": [{"source": "cpg-limit-cycle", "action": "branch", "score": 0.35, "consequence": "simulation+study", "command": "viva-study seed-from-followup \u003cparent> \u003cproposal>; vivarium-workbench run study cpg-limit-cycle --workspace \u003cws>"}, {"source": "gait-and-velocity", "action": "branch", "score": 0.35, "consequence": "simulation+study", "command": "viva-study seed-from-followup \u003cparent> \u003cproposal>; vivarium-workbench run study gait-and-velocity --workspace \u003cws>"}, {"source": "walk-forward", "action": "branch", "score": 0.35, "consequence": "simulation+study", "command": "viva-study seed-from-followup \u003cparent> \u003cproposal>; vivarium-workbench run study walk-forward --workspace \u003cws>"}, {"source": "claim:cpg-limit-cycle", "action": "test", "score": 0.12, "consequence": "simulation", "command": "vivarium-workbench run study cpg-limit-cycle --workspace \u003cws>"}, {"source": "claim:gait-and-velocity", "action": "test", "score": 0.12, "consequence": "simulation", "command": "vivarium-workbench run study gait-and-velocity --workspace \u003cws>"}, {"source": "claim:walk-forward", "action": "test", "score": 0.12, "consequence": "simulation", "command": "vivarium-workbench run study walk-forward --workspace \u003cws>"}, {"source": "Report the single evolved walker (as the paper analyzes one CPG), or sweep leg geometry / omega-gain to map the gaits that evolve?", "action": "steer", "score": 0.06, "consequence": "human-only", "command": null}], "suggestions": [{"id": "discriminate-323e6977", "parent": null, "status": "awaiting_expert", "needs": "The evolved walker travels ~450 units over a 500-step trial and never\nreverses, taking 25 regular steps — a sustained forward walk, not a one-off\nlunge (which a pure-distance fitness produces, reaching only ~21)."}, {"id": "discriminate-10ed03a7", "parent": null, "status": "awaiting_expert", "needs": "The evolved CTRNN's state traces a clean closed loop in its activity space — a\nlimit cycle — repeating once per stride (~19.8 steps). The rhythm is a\nself-sustaining attractor, not a clocked or scripted sequence."}, {"id": "discriminate-f590a57d", "parent": null, "status": "awaiting_expert", "needs": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the\nperiod), duty factor 0.44 (stance and swing nearly balanced), mean body\nvelocity ~9.0 units/time (~0.9 units/step)."}], "validator_census": {"failed": 3, "passed": 1}, "drift": {"divergences": 0, "stale_validations": 0}}, "synthesis": {"studies_index": [{"slug": "walk-forward", "title": "The Walker Walks Forward", "stage": "walk-forward", "run_status": "ran", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "The evolved walker travels ~450 units over a 500-step trial and never reverses, taking 25 regular steps — a sustained forward walk, not a one-off lunge (which a pure-distance fitness produces, reaching only ~21)."}, {"slug": "cpg-limit-cycle", "title": "The CPG's Limit Cycle", "stage": "cpg-limit-cycle", "run_status": "ran", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "The evolved CTRNN's state traces a clean closed loop in its activity space — a limit cycle — repeating once per stride (~19.8 steps)."}, {"slug": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity", "stage": "gait-and-velocity", "run_status": "ran", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the period), duty factor 0.44 (stance and swing nearly balanced), mean body velocity ~9.0 units/time (~0.9 units/step)."}], "stages": [{"key": "cpg-limit-cycle", "label": "The CPG's Limit Cycle", "studies": [{"slug": "cpg-limit-cycle", "title": "The CPG's Limit Cycle", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "The evolved CTRNN's state traces a clean closed loop in its activity space — a limit cycle — repeating once per stride (~19.8 steps).", "run_status": "ran"}], "model_dependence": false, "findings": [{"study": "cpg-limit-cycle", "title": "The CPG's Limit Cycle", "grade": "supported", "status": null, "statement": "The CTRNN state settles onto a closed limit cycle repeating once per stride — the CPG attractor.", "observed": null, "units": null}]}, {"key": "gait-and-velocity", "label": "Gait Quantified — Stride, Duty, Velocity", "studies": [{"slug": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the period), duty factor 0.44 (stance and swing nearly balanced), mean body velocity ~9.0 units/time (~0.9 units/step).", "run_status": "ran"}], "model_dependence": false, "findings": [{"study": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity", "grade": "supported", "status": null, "statement": "Stride period 19.8 ± 0.4 steps, duty factor 0.44, mean velocity ~9.0 — a regular, balanced gait.", "observed": null, "units": null}]}, {"key": "walk-forward", "label": "The Walker Walks Forward", "studies": [{"slug": "walk-forward", "title": "The Walker Walks Forward", "grade": "supported", "claim_status": "supported", "variant": false, "one_line": "The evolved walker travels ~450 units over a 500-step trial and never reverses, taking 25 regular steps — a sustained forward walk, not a one-off lunge (which a pure-distance fitness produces, reaching only ~21).", "run_status": "ran"}], "model_dependence": false, "findings": [{"study": "walk-forward", "title": "The Walker Walks Forward", "grade": "supported", "status": null, "statement": "Walks ~450 units in 500 steps with 25 steps; net strictly forward (sub-0.3-unit coasting jitter only); a pure-distance fitness instead evolves a single ~21-unit lunge.", "observed": null, "units": null}]}], "claim_evidence": [{"claim": "The evolved walker travels ~450 units over a 500-step trial and never reverses, taking 25 regular steps — a sustained forward walk, not a one-off lunge (which a pure-distance fitness produces, reaching only ~21).", "status": "supported", "grade": "supported", "study": "walk-forward", "study_title": "The Walker Walks Forward"}, {"claim": "The evolved CTRNN's state traces a clean closed loop in its activity space — a limit cycle — repeating once per stride (~19.8 steps).", "status": "supported", "grade": "supported", "study": "cpg-limit-cycle", "study_title": "The CPG's Limit Cycle"}, {"claim": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the period), duty factor 0.44 (stance and swing nearly balanced), mean body velocity ~9.0 units/time (~0.9 units/step).", "status": "supported", "grade": "supported", "study": "gait-and-velocity", "study_title": "Gait Quantified — Stride, Duty, Velocity"}], "contradictions": [{"kind": "competing-framework", "topic": "Scripted / clocked motor sequence", "detail": "contrasts-with — here the rhythm is a dynamical limit cycle, not a timed script", "studies": []}], "continuity": {"edges": [], "external_inputs": [{"slug": "walk-forward", "title": "The Walker Walks Forward"}, {"slug": "cpg-limit-cycle", "title": "The CPG's Limit Cycle"}, {"slug": "gait-and-velocity", "title": "Gait Quantified — Stride, Duty, Velocity"}]}, "quantitative": [], "roadmap": [], "figures_ranked": [{"slug": "walk-forward", "study_title": "The Walker Walks Forward", "name": "walk", "caption": null, "score": 4}, {"slug": "cpg-limit-cycle", "study_title": "The CPG's Limit Cycle", "name": "CPG limit cycle", "caption": null, "score": 4}, {"slug": "gait-and-velocity", "study_title": "Gait Quantified — Stride, Duty, Velocity", "name": "gait diagram", "caption": null, "score": 4}], "headline": [], "counts": {"total": 3, "supported": 3, "qualified": 0, "refuted": 0, "planned": 0}, "validation": {"investigation": "legged-locomotion", "items": [], "summary": {"by_severity": {"high": 0, "medium": 0, "low": 0}, "by_kind": {}, "total": 0, "member_count": 3, "ac_total": 3, "ac_covered": 3, "evaluated_count": 0}, "checks": [{"kind": "uncovered_ac", "label": "Acceptance criteria covered", "mode": "coverage", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "unresolved_composite", "label": "Composites resolve in the registry", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "verdict_divergence", "label": "Verdicts match the authored gate", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "hard_gate", "label": "Hard gates passing", "mode": "studies", "flagged": 0, "examined": 0, "passing": 0}, {"kind": "test_regression", "label": "No behavior-test regressions", "mode": "studies", "flagged": 0, "examined": 0, "passing": 0}, {"kind": "diagnostic_branch_needed", "label": "Failed verdicts have a diagnostic study", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "invariant_regression", "label": "No invariant regressions", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "open_feedback", "label": "Expert feedback addressed", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "param_drift", "label": "No parameter drift", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "unregistered_confirmatory", "label": "Confirmatory studies registered", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "stale_finding", "label": "No stale findings", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "env_stale", "label": "Run environments current", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}, {"kind": "nondeterministic", "label": "Runs reproducible", "mode": "studies", "flagged": 0, "examined": 3, "passing": 3}], "report_lint": []}}, "references": {}, "inv_references": null, "catalog": null, "workspace": "viva-bbe-systems", "provenance": "investigations/legged-locomotion/investigation.yaml · studies/*/study.yaml · loop-trajectory JSON", "studies": [{"title": "The Walker Walks Forward", "confidence": "Accepted", "question": "Does the evolved CTRNN drive the leg so the body travels steadily forward,\nwith a repeating step cycle rather than a single lunge?\n", "claim": "The evolved walker travels ~450 units over a 500-step trial and never\nreverses, taking 25 regular steps — a sustained forward walk, not a one-off\nlunge (which a pure-distance fitness produces, reaching only ~21).\n", "baseline": [{"name": "walker-bbe", "composite": "viva_bbe_systems.composites.walker", "params": {}}], "runs": [], "findings": [{"summary": "Walks ~450 units in 500 steps with 25 steps; net strictly forward (sub-0.3-unit coasting jitter only); a pure-distance fitness instead evolves a single ~21-unit lunge.", "detail": "figures/walk.gif shows the leg planting and swinging as the body advances\nacross the ground; figures/gait_diagram.png shows the stance/swing bands and\nthe steadily rising body position/velocity.\n"}], "status": "ran", "slug": "walk-forward", "execution_status": "completed", "baseline_composite": "viva_bbe_systems.composites.walker", "tests_counts": {"passed": 0, "skipped": 0, "failed": 0}, "figures_embedded": [{"name": "walk", "skipped": true, "reason": "declared visualization is not present in the report (no committed figure, no run output, no live render)"}, {"name": "gait diagram", "skipped": true, "reason": "declared visualization is not present in the report (no committed figure, no run output, no live render)"}, {"name": "evolution", "skipped": true, "reason": "declared visualization is not present in the report (no committed figure, no run output, no live render)"}, {"name": "evolution progress", "skipped": true, "reason": "declared visualization is not present in the report (no committed figure, no run output, no live render)"}], "model_topology": {"processes": [{"name": "brain", "kind": "process", "address": "local:CTRNNProcess", "inputs": ["sensory_input"], "outputs": ["motor_output", "neuron_outputs", "neuron_states"], "doc": "", "compartments": []}, {"name": "body", "kind": "process", "address": "local:WalkerBodyProcess", "inputs": ["motor_output"], "outputs": ["sensory_input", "body_x", "foot_down", "leg_angle", "body_vx"], "doc": "", "compartments": []}], "stores": [], "edges": [], "composite": "viva_bbe_systems.composites.walker"}, "verdict": "not_started", "verdict_counts": {"passed": 0, "skipped": 0, "failed": 0}, "run_commands": {"baseline": "vwb run study walk-forward", "variants": [], "simulations": [], "rerun_hint": "vwb rerun \u003crun-id>"}}, {"title": "The CPG's Limit Cycle", "confidence": "Accepted", "question": "Is the walking rhythm a dynamical attractor of the CTRNN — does the network's\nstate trace a stable closed loop (a limit cycle), the signature of a central\npattern generator?\n", "claim": "The evolved CTRNN's state traces a clean closed loop in its activity space — a\nlimit cycle — repeating once per stride (~19.8 steps). The rhythm is a\nself-sustaining attractor, not a clocked or scripted sequence.\n", "baseline": [{"name": "walker-bbe", "composite": "viva_bbe_systems.composites.walker", "params": {}}], "runs": [], "findings": [{"summary": "The CTRNN state settles onto a closed limit cycle repeating once per stride — the CPG attractor.", "detail": "figures/cpg_limit_cycle.png shows the phase portrait (a closed loop);\nfigures/neural_activity.gif shows the node-ring activations and the regular\ntime raster driving the leg.\n"}], "status": "ran", "slug": "cpg-limit-cycle", "execution_status": "completed", "baseline_composite": "viva_bbe_systems.composites.walker", "tests_counts": {"passed": 0, "skipped": 0, "failed": 0}, "figures_embedded": [{"name": "CPG limit cycle", "skipped": true, "reason": "declared visualization is not present in the report (no committed figure, no run output, no live render)"}, {"name": "neural activity", "skipped": true, "reason": "declared visualization is not present in the report (no committed figure, no run output, no live render)"}, {"name": "walk", "skipped": true, "reason": "declared visualization is not present in the report (no committed figure, no run output, no live render)"}], "model_topology": {"processes": [{"name": "brain", "kind": "process", "address": "local:CTRNNProcess", "inputs": ["sensory_input"], "outputs": ["motor_output", "neuron_outputs", "neuron_states"], "doc": "", "compartments": []}, {"name": "body", "kind": "process", "address": "local:WalkerBodyProcess", "inputs": ["motor_output"], "outputs": ["sensory_input", "body_x", "foot_down", "leg_angle", "body_vx"], "doc": "", "compartments": []}], "stores": [], "edges": [], "composite": "viva_bbe_systems.composites.walker"}, "verdict": "not_started", "verdict_counts": {"passed": 0, "skipped": 0, "failed": 0}, "run_commands": {"baseline": "vwb run study cpg-limit-cycle", "variants": [], "simulations": [], "rerun_hint": "vwb rerun \u003crun-id>"}}, {"title": "Gait Quantified — Stride, Duty, Velocity", "confidence": "Accepted", "question": "What gait does the evolved walker produce — how regular is its stride, how is\nstance/swing balanced, and how fast does the body move?\n", "claim": "A regular gait: stride period 19.8 ± 0.4 steps (the spread is only ~2% of the\nperiod), duty factor 0.44 (stance and swing nearly balanced), mean body\nvelocity ~9.0 units/time (~0.9 units/step).\n", "baseline": [{"name": "walker-bbe", "composite": "viva_bbe_systems.composites.walker", "params": {}}], "runs": [], "findings": [{"summary": "Stride period 19.8 ± 0.4 steps, duty factor 0.44, mean velocity ~9.0 — a regular, balanced gait.", "detail": "figures/gait_diagram.png annotates the measured stride period and duty\nfactor on the stance/swing bands; figures/cpg_limit_cycle.png shows the\nunderlying regularity in the CTRNN state.\n"}], "status": "ran", "slug": "gait-and-velocity", "execution_status": "completed", "baseline_composite": "viva_bbe_systems.composites.walker", "tests_counts": {"passed": 0, "skipped": 0, "failed": 0}, "figures_embedded": [{"name": "gait diagram", "skipped": true, "reason": "declared visualization is not present in the report (no committed figure, no run output, no live render)"}, {"name": "CPG limit cycle", "skipped": true, "reason": "declared visualization is not present in the report (no committed figure, no run output, no live render)"}], "model_topology": {"processes": [{"name": "brain", "kind": "process", "address": "local:CTRNNProcess", "inputs": ["sensory_input"], "outputs": ["motor_output", "neuron_outputs", "neuron_states"], "doc": "", "compartments": []}, {"name": "body", "kind": "process", "address": "local:WalkerBodyProcess", "inputs": ["motor_output"], "outputs": ["sensory_input", "body_x", "foot_down", "leg_angle", "body_vx"], "doc": "", "compartments": []}], "stores": [], "edges": [], "composite": "viva_bbe_systems.composites.walker"}, "verdict": "not_started", "verdict_counts": {"passed": 0, "skipped": 0, "failed": 0}, "run_commands": {"baseline": "vwb run study gait-and-velocity", "variants": [], "simulations": [], "rerun_hint": "vwb rerun \u003crun-id>"}}], "loom_embed": {"loom": "../bigraph-loom/index.html", "state": "../api/composite-state/"}}</script>
 <script>
 const INV = JSON.parse(document.getElementById('data').textContent);
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1063,7 +1890,11 @@ function fmt(n){ if(typeof n!=='number') return esc(n); return Number.isInteger(
 function provText(p){ if(!p) return ''; if(typeof p==='string') return p;
   if(typeof p==='object') return String(p.note||p.rationale||p.kind||Object.values(p).filter(v=>typeof v==='string').join(' · ')||''); return String(p); }
 
-function fbBubble(key,label){ return `<button class="fbbubble ${FB[key]?'has':''}" data-fb="${esc(key)}" data-fblabel="${esc(label)}" title="Add feedback to this section" aria-label="Add feedback to ${esc(label)}">💬</button>`; }
+// Legacy inline bubble — superseded by the shared feedback engine
+// (static/study-feedback.js, inlined near the end of this document), which
+// decorates every `.fbsection` / study card with a hover-corner. Kept as a
+// no-op so the render markup (which still calls it) stays intact.
+function fbBubble(key,label){ return ''; }
 function part(label, body, key, klabel){ if(!body) return '';
   return `<div class="substage fbsection">${key?fbBubble(key,klabel||label):''}<div class="slabel">${label}</div>${body}</div>`; }
 
@@ -1624,15 +2455,9 @@ function setFB(key,patch){ FB[key]={...(FB[key]||{}),...patch};
   if(!FB[key].note && !FB[key].disp) delete FB[key]; saveFB(); }
 function fbCount(){ return Object.keys(FB).length; }
 function updateCount(){ const el=document.getElementById('fbcnt'); if(el) el.textContent=fbCount(); }
-function feedbackRow(key,label){ const f=FB[key]||{};
-  return `<div class="fbrow" data-fbkey="${esc(key)}">
-    <span class="fblabel">Feedback · ${esc(label)}</span>
-    <div class="fbdisp">
-      <button data-disp="ok" class="${f.disp==='ok'?'on-ok':''}">👍 Looks right</button>
-      <button data-disp="revise" class="${f.disp==='revise'?'on-rev':''}">✏️ Needs revision</button>
-    </div>
-    <input class="fbnote" placeholder="Add a note…" value="${esc(f.note||'')}"></div>`;
-}
+// Legacy inline editor row — superseded by the shared feedback engine's popover.
+// No-op so render markup that calls feedbackRow('overall', …) stays intact.
+function feedbackRow(key,label){ return ''; }
 function yq(s){ return '"'+String(s).replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,' ')+'"'; }
 function genYaml(inv){
   const L=['feedback_report:','  investigation: '+inv.slug,'  title: '+yq(inv.title),
@@ -2950,27 +3775,8 @@ app.addEventListener('click',e=>{
   const head=e.target.closest('.card-h');
   if(head){ head.closest('.card').classList.toggle('collapsed'); }
 });
-// modal
-const modalbg=document.getElementById('modalbg');
-// "Review & export" downloads the YAML feedback report straight to the downloads
-// folder (no modal). A Blob + transient <a download> — works in the served page.
-document.getElementById('fbfloat').onclick=()=>{
-  const yaml=genYaml(INV);
-  const blob=new Blob([yaml],{type:'application/x-yaml'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download='feedback-'+(INV.slug||'investigation')+'.yaml';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  const btn=document.getElementById('fbfloat');
-  const prev=btn.innerHTML; btn.innerHTML='Downloaded ✓';
-  setTimeout(()=>{btn.innerHTML=prev;},1600);
-};
-document.getElementById('fbclose').onclick=()=>modalbg.classList.remove('open');
-modalbg.onclick=e=>{ if(e.target===modalbg) modalbg.classList.remove('open'); };
-document.getElementById('fbcopy').onclick=()=>{ const ta=document.getElementById('fbyaml'); ta.select();
-  try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand&&document.execCommand('copy'); }
-  document.getElementById('fbcopy').textContent='Copied ✓'; setTimeout(()=>document.getElementById('fbcopy').textContent='Copy YAML',1500); };
+// (Legacy export button + modal removed — the shared feedback engine
+// [static/study-feedback.js, inlined] now owns collection + export.)
 render(INV);
 </script>
 </body>
