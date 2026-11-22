@@ -143,7 +143,7 @@ The three required visualizations per study (as established for categorical-perc
 - **Dynamical analysis (action switching):** reproduce the paper's reading — plot the agent's state-space trajectory and/or the **distance from sensorimotor-coordination modes over time** (the paper's Fig 12 idea: segments where different sensor/effector subsets are engaged), and a nutrient-vs-nutrient phase plot showing the switching cycle. Static figure + an animated state-trajectory GIF.
 - **Evolution-progress:** `evolution_curves.png` (mean survival vs generation) + `evolution_progress.gif` (best agent's trial improving — e.g. survival / path at checkpoint generations), from `evolve_forager(record_every=...)` checkpoints whose final genome == the committed seed (pin with a test).
 
-Studies: `forage-and-survival` (the agent sustains both nutrients / achieved survival), `morphology-comparison` (M1/M2/M3 evolved strategies — variant study; M3 lacks internal sensors so must internalize nutrient state), `action-switching-dynamics` (the deep single-agent dynamical analysis, morphology M2). Investigation v2 spine (executive/scientific_argument/biological_story, competing_frameworks, glossary), honest reporting of achieved survival. `/viva-report` render. Commit.
+Studies: `forage-and-survival` (the agent sustains both nutrients / achieved survival), `morphology-comparison` (M1/M2/M3 evolved strategies — variant study; M3 lacks internal sensors so must internalize nutrient state), `action-switching-dynamics` (the deep single-agent dynamical analysis, morphology M2). Investigation v2 spine (executive/scientific_argument/biological_story, competing_frameworks, glossary), honest reporting of achieved survival. `/viva:report` render. Commit.
 
 ---
 

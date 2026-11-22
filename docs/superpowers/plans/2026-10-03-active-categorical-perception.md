@@ -612,7 +612,7 @@ Run `python -m viva_bbe_systems.tasks.evolve_categorical` (full budget). Inspect
 
 - [ ] **Step 1 (gallery):** render, from the committed seed, (a) **catch/avoid trajectories** (agent_x vs time for circles and diamonds at several offsets), (b) the **categorization map** (final_distance vs object offset, circle vs diamond — the Beer categorization plot), (c) a **decision-dynamics** figure (CTRNN neuron-state trajectories / a 2-projection phase plot during a catch vs an avoid). Reuse `viz`/`analysis` where applicable.
 - [ ] **Step 2 (investigation + studies):** write `investigation.yaml` (v2 spine: executive/scientific_argument/biological_story, competing_frameworks, glossary) + three studies (`catch-and-avoid`, `categorization-map`, `decision-dynamics`) with the achieved metrics from Task 6 as acceptance bands, each citing Beer (2003). Mark honestly if separation is partial.
-- [ ] **Step 3 (report):** `/viva-report` (Pass A audit + Pass B lint + render). Resolve blocking findings. Commit.
+- [ ] **Step 3 (report):** `/viva:report` (Pass A audit + Pass B lint + render). Resolve blocking findings. Commit.
 - [ ] **Step 4 (commit):** `git add` the gallery, figures, investigation, studies, rendered report; commit.
 
 ---

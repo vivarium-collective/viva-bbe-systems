@@ -1,7 +1,7 @@
 """Dynamical-systems visualizations (Beer's signature plots). AI-free.
 
 Plain functions returning matplotlib Figures so they are unit-testable and
-usable from a gallery script or /viva-viz wiring. No dashboard decorator."""
+usable from a gallery script or /viva:viz wiring. No dashboard decorator."""
 from __future__ import annotations
 import numpy as np
 import matplotlib

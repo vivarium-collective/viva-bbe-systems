@@ -17,7 +17,7 @@
 - CTRNN convention: `tau_i ẏ_i = −y_i + Σ_j w[i,j]·σ(y_j+θ_j) + I_i`, `σ(x)=1/(1+e^{-x})`, output `o_i=σ(y_i+θ_i)`. Weight index convention: `w[i,j]` is the connection **from** neuron `j` **to** neuron `i` (so the drive term is `w @ o`).
 - All randomness takes an explicit seed; studies are deterministic. Non-finite CTRNN state fails loud (raise), never emits.
 - Processes are labeled clean-room reproductions of the cited Beer papers. **No AI attribution** in any commit message or PR. Dashboard visuals are AI-free.
-- Studies/investigations are created through `/viva-study` and `/viva-investigation` (canonical `study.yaml` + provenance), never hand-edited around the skills.
+- Studies/investigations are created through `/viva:study` and `/viva:investigate` (canonical `study.yaml` + provenance), never hand-edited around the skills.
 
 ## Review Focus
 
@@ -40,7 +40,7 @@
 
 - [ ] **Step 1: Scaffold the repo via the workspace skill**
 
-Invoke `/viva-workspace` in **standalone** mode to clone the pbg-template into `~/code/viva-bbe-systems` on a workspace branch. Set workspace `name: bbe-systems`, `package_path: viva_bbe_systems`. (The `docs/` and `references/` already staged in that directory are preserved / merged.)
+Invoke `/viva:workspace` in **standalone** mode to clone the pbg-template into `~/code/viva-bbe-systems` on a workspace branch. Set workspace `name: bbe-systems`, `package_path: viva_bbe_systems`. (The `docs/` and `references/` already staged in that directory are preserved / merged.)
 
 - [ ] **Step 2: Set package metadata**
 
@@ -848,7 +848,7 @@ git commit -m "feat: generic composite-evolving genetic algorithm"
 **Interfaces:**
 - Consumes: `CTRNN`, `analysis.equilibria`, `analysis.nullcline_grid`, `analysis.bifurcation_sweep`.
 - Produces (plain functions returning a matplotlib `Figure` — NO decorator; the
-  dashboard-registered Visualizations are wired separately by `/viva-viz` in Task 9):
+  dashboard-registered Visualizations are wired separately by `/viva:viz` in Task 9):
   - `phase_portrait_2d(net, I, y_range=(-10,10), resolution=25)` — vector field + both nullclines + equilibria (stable filled, unstable open).
   - `bifurcation_diagram(net_factory, param_values, param_name, I=0.0)` — equilibrium branches vs parameter, colored by stability.
 
@@ -891,7 +891,7 @@ Expected: FAIL (module not defined).
 """Dynamical-systems visualizations (Beer's signature plots). AI-free.
 
 Plain functions returning matplotlib Figures so they are unit-testable and
-usable from a gallery script or /viva-viz wiring. No dashboard decorator."""
+usable from a gallery script or /viva:viz wiring. No dashboard decorator."""
 from __future__ import annotations
 import numpy as np
 import matplotlib
@@ -1032,10 +1032,10 @@ Expected: PASS.
 
 - [ ] **Step 5: Build the investigation + studies via skills**
 
-Invoke `/viva-investigation new` → `ctrnn-parameter-space` (overview: reproduce Beer's parameter-space structure of small CTRNNs). Then `/viva-study` to create the three studies, each with acceptance bands cited to the source paper via `/viva-cite-bands`:
+Invoke `/viva:investigate new` → `ctrnn-parameter-space` (overview: reproduce Beer's parameter-space structure of small CTRNNs). Then `/viva:study` to create the three studies, each with acceptance bands cited to the source paper via `/viva-cite-bands`:
   - `param-space-equilibria-and-nullclines` — for the 2-neuron center-crossing net, assert equilibrium count + render `phase_portrait_2d`. Band: equilibria match the analytically expected count.
   - `param-space-codim1-bifurcations` — single-neuron self-weight sweep; assert transition 1→3 equilibria; render `bifurcation_diagram`. Cite Beer (2006).
-  - `param-space-codim2-structure` — `codim2_equilibria_count` over (self-weight × bias); render the count grid as a parameter-plane heatmap (add a `codim2_heatmap` viz via `/viva-viz`). Cite Beer (2022).
+  - `param-space-codim2-structure` — `codim2_equilibria_count` over (self-weight × bias); render the count grid as a parameter-plane heatmap (add a `codim2_heatmap` viz via `/viva:viz`). Cite Beer (2022).
 
 - [ ] **Step 6: Commit**
 
@@ -1049,7 +1049,7 @@ git commit -m "feat: CTRNN parameter-space investigation with 3 studies"
 ### Task 10: Publish read-only workbench + report
 
 **Files:**
-- Modify: none (uses `/viva-report`)
+- Modify: none (uses `/viva:report`)
 
 - [ ] **Step 1: Full test sweep**
 
@@ -1058,11 +1058,11 @@ Expected: all green.
 
 - [ ] **Step 2: Reviewer-readiness + render**
 
-Invoke `/viva-report` (Pass A audit, Pass B lint, then render) over the `ctrnn-parameter-space` investigation. Resolve any flagged drift.
+Invoke `/viva:report` (Pass A audit, Pass B lint, then render) over the `ctrnn-parameter-space` investigation. Resolve any flagged drift.
 
 - [ ] **Step 3: Publish**
 
-Invoke `/viva-workbench` to serve, confirm the investigation + three studies + visualizations render, then publish the read-only workbench per the ecosystem publish flow.
+Invoke `/viva:workbench` to serve, confirm the investigation + three studies + visualizations render, then publish the read-only workbench per the ecosystem publish flow.
 
 - [ ] **Step 4: Commit**
 

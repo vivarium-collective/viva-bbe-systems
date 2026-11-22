@@ -103,7 +103,7 @@ Visualizations per study (wired as `visualizations:`):
 - **Neural activity:** `neural_activity.gif` — the CTRNN node-ring graph + time raster across the two phases + ISI (reuse the `animate_neural` pattern), showing the memory trace holding over the ISI.
 - **Evolution-progress:** `evolution_curves.png` (accuracy vs generation) + `evolution_progress.gif` (the decision boundary sharpening across generations).
 
-Studies: `relative-size-discrimination` (catch larger / avoid smaller; achieved accuracy + per-relation), `memory-dynamics` (s1 encoded in state over the ISI; the decision boundary ≈ diagonal). Investigation v2 spine (executive/scientific_argument/biological_story, competing_frameworks, glossary), honest reporting. Each study: non-empty baseline + `visualizations:`. `/viva-report` render. Commit.
+Studies: `relative-size-discrimination` (catch larger / avoid smaller; achieved accuracy + per-relation), `memory-dynamics` (s1 encoded in state over the ISI; the decision boundary ≈ diagonal). Investigation v2 spine (executive/scientific_argument/biological_story, competing_frameworks, glossary), honest reporting. Each study: non-empty baseline + `visualizations:`. `/viva:report` render. Commit.
 
 ---
 

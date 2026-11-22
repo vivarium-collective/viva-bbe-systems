@@ -101,7 +101,7 @@ The three required visualizations per study (as established for the other models
 - **Neural activity (CPG firing):** `neural_activity.gif` — the CTRNN node-ring graph (neuron outputs + weight edges) + a time raster, showing the central pattern generator's rhythm driving the leg (reuse the forager's `animate_neural` pattern).
 - **Evolution-progress:** `evolution_curves.png` (distance vs generation) + `evolution_progress.gif` (the gait improving — e.g. the leg-angle/foot trace or the walk at checkpoint generations), from `evolve_walker(record_every=...)` checkpoints whose final genome == the committed seed (pin with a test).
 
-Studies: `walk-forward` (the agent walks forward; achieved distance + gait), `cpg-limit-cycle` (the CPG's rhythmic dynamics / limit cycle), `gait-and-velocity` (stride period, duty factor, mean velocity). Investigation v2 spine (executive/scientific_argument/biological_story, competing_frameworks, glossary), honest reporting of the achieved gait. Each study: non-empty baseline + `visualizations:` block. `/viva-report` render. Commit.
+Studies: `walk-forward` (the agent walks forward; achieved distance + gait), `cpg-limit-cycle` (the CPG's rhythmic dynamics / limit cycle), `gait-and-velocity` (stride period, duty factor, mean velocity). Investigation v2 spine (executive/scientific_argument/biological_story, competing_frameworks, glossary), honest reporting of the achieved gait. Each study: non-empty baseline + `visualizations:` block. `/viva:report` render. Commit.
 
 ---
 
